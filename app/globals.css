@@ -21,6 +21,15 @@
   --border: #1f2937;
 }
 
+.dark body { background: #0a0f0a; color: #f1f5f9; }
+
+/* Print styles for invoice modal */
+@media print {
+  body * { visibility: hidden; }
+  .invoice-sheet, .invoice-sheet * { visibility: visible; }
+  .invoice-sheet { position: absolute; left: 0; top: 0; width: 100%; }
+}
+
 html { scroll-behavior: smooth; }
 html[dir="rtl"] { text-align: right; }
 

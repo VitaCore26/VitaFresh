@@ -1,9 +1,19 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { signup } from "@/lib/api"
 import Logo from "@/components/Logo"
+
+// Next 15 requires useSearchParams() under a Suspense boundary during prerender.
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="mx-auto max-w-md px-4 py-16 text-center text-slate-500">Chargement…</div>}>
+      <SignupForm />
+    </Suspense>
+  )
+}
 
 type SousType = "particulier" | "chr" | "marchand"
 
@@ -13,7 +23,7 @@ const TYPES: { v: SousType; label: string; emoji: string; desc: string }[] = [
   { v: "marchand",    label: "Marchand / Épicier", emoji: "🏪",  desc: "Épicerie, alimentation" },
 ]
 
-export default function SignupPage() {
+function SignupForm() {
   const [form, setForm] = useState({
     nom: "", telephone: "", email: "", adresse: "", ville: "Casablanca",
     sousType: "particulier" as SousType,
@@ -22,7 +32,15 @@ export default function SignupPage() {
   const [gps, setGps] = useState<{ lat?: number; lng?: number }>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [success, setSuccess] = useState<{ password?: string } | null>(null)
+  const [success, setSuccess] = useState<{ password?: string; referralApplied?: boolean } | null>(null)
+
+  // Parrainage code from URL (?parrain=VITA-XXXXXX) — applied after signup
+  const searchParams = useSearchParams()
+  const [parrainCode, setParrainCode] = useState("")
+  useEffect(() => {
+    const p = searchParams?.get("parrain")?.trim().toUpperCase()
+    if (p && /^VITA-[A-Z0-9]{4,12}$/i.test(p)) setParrainCode(p)
+  }, [searchParams])
 
   const captureGps = () => {
     if (!navigator.geolocation) { setError("Géolocalisation non supportée par votre navigateur."); return }
@@ -52,7 +70,22 @@ export default function SignupPage() {
         gps_consent: gpsConsent,
       })
       if ((res as { ok?: boolean }).ok === false) throw new Error((res as { message?: string }).message ?? "Échec de l'inscription")
-      setSuccess({ password: res.password })
+
+      // Apply parrainage if a valid code came in via ?parrain=…
+      let referralApplied = false
+      const filleulClientId = (res as { clientId?: string; userId?: string }).clientId
+                              ?? (res as { clientId?: string; userId?: string }).userId
+      if (parrainCode && filleulClientId) {
+        try {
+          const r = await fetch("/api/portal/referrals/apply", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ parrainCode, filleulClientId }),
+          })
+          referralApplied = r.ok
+        } catch { /* parrainage best-effort */ }
+      }
+      setSuccess({ password: res.password, referralApplied })
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur lors de l'inscription")
     } finally {
@@ -73,6 +106,12 @@ export default function SignupPage() {
             <p className="mt-2 text-xs text-slate-600">Notez-le : il ne sera plus affiché. Vous pourrez le changer après connexion.</p>
           </div>
         )}
+        {success.referralApplied && (
+          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left">
+            <p className="text-xs font-bold uppercase tracking-widest text-amber-700">🤝 Parrainage validé</p>
+            <p className="mt-1 text-sm text-amber-900">Un bonus de bienvenue sera crédité sur votre Wallet dès votre première commande livrée.</p>
+          </div>
+        )}
         <Link href="/login" className="btn-primary mt-6 inline-flex">Se connecter →</Link>
       </div>
     )
@@ -87,6 +126,15 @@ export default function SignupPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="card mt-8 flex flex-col gap-5 p-6">
+        {parrainCode && (
+          <div className="rounded-xl border border-brand/30 bg-brand-50 px-4 py-3 flex items-center gap-3">
+            <span className="text-2xl">🤝</span>
+            <div className="text-sm">
+              <p className="font-bold text-brand">Code parrain détecté : <code className="font-mono">{parrainCode}</code></p>
+              <p className="text-brand-dark/80 text-xs mt-0.5">Vous recevrez un bonus de bienvenue après votre première commande livrée.</p>
+            </div>
+          </div>
+        )}
         {error && (
           <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">{error}</p>
         )}
