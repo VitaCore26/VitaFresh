@@ -37,7 +37,7 @@ User-agent: MJ12bot
 Disallow: /
 
 # Sitemaps
-Sitemap: https://vitafresh.vita-core.org/sitemap.xml
+Sitemap: https://shop.vita-core.org/sitemap.xml
 
 # Hôte canonique
-Host: vitafresh.vita-core.org
+Host: shop.vita-core.org
