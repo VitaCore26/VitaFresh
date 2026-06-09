@@ -1454,7 +1454,7 @@ function setLang(lang){
         <button onclick="addGalleryItem('image')" style="padding:9px 16px;border-radius:8px;background:var(--g1);color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:700">➕ Ajouter image (URL)</button>
         <button onclick="addGalleryItem('video')" style="padding:9px 16px;border-radius:8px;background:#7c3aed;color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:700">🎥 Ajouter vidéo (URL)</button>
       </div>
-      <div style="font-size:11px;color:var(--gy);margin-top:10px">Collez un lien d'image (.jpg/.png/.webp), de vidéo (.mp4) ou une URL <strong>YouTube / Vimeo</strong> — l'aperçu s'affiche automatiquement.</div>
+      <div style="font-size:11px;color:var(--gy);margin-top:10px">Collez un lien d'image (.jpg/.png/.webp), vidéo (.mp4), <strong>YouTube / Vimeo</strong> ou <strong>Google Drive</strong> (image ou vidéo partagée) — l'aperçu s'affiche automatiquement.</div>
     </div>
     <!-- ── GESTION ACTUALITÉS ── -->
     <div class="cfg-sec" id="s-news">
@@ -4973,7 +4973,7 @@ function renderNews(){
     // — Type PUB : image publicitaire dominante (bannière) —
     if(it.type==="pub" && it.img){
       var pub=document.createElement("article"); pub.className="news-card news-pub";
-      var inner='<img class="news-pub-img" src="'+escapeHtml(it.img)+'" alt="'+escapeHtml(it.title||"Publicité")+'" loading="lazy" onerror="this.style.display=\'none\'">';
+      var inner='<img class="news-pub-img" src="'+escapeHtml(driveImageUrl(it.img))+'" alt="'+escapeHtml(it.title||"Publicité")+'" loading="lazy" onerror="this.style.display=\'none\'">';
       if(it.title||it.badge){
         inner+='<div class="news-pub-overlay">'
           +(it.badge?'<span class="news-card-badge">'+escapeHtml(it.badge)+'</span>':'')
@@ -4987,7 +4987,7 @@ function renderNews(){
       return;
     }
     var card=document.createElement("article"); card.className="news-card";
-    var imgHtml=it.img?'<img class="news-card-img" src="'+escapeHtml(it.img)+'" alt="'+escapeHtml(it.title)+'" loading="lazy" onerror="this.style.display=\'none\'">':'';
+    var imgHtml=it.img?'<img class="news-card-img" src="'+escapeHtml(driveImageUrl(it.img))+'" alt="'+escapeHtml(it.title)+'" loading="lazy" onerror="this.style.display=\'none\'">':'';
     card.innerHTML=imgHtml
       +'<div class="news-card-body">'
       +(it.badge?'<span class="news-card-badge">'+escapeHtml(it.badge)+'</span>':'')
@@ -5028,7 +5028,7 @@ function addNewsItem(){
 }
 // Ajoute une PUB (image publicitaire) — l'admin colle juste l'URL de l'image
 function addNewsPub(){
-  var url=window.prompt("Collez l'URL de l'image publicitaire (.jpg / .png / .webp) :","");
+  var url=window.prompt("Collez l'URL de l'image publicitaire (.jpg/.png/.webp ou lien Google Drive partagé) :","");
   if(!url||!url.trim()) return;
   var link=window.prompt("Lien au clic (optionnel — laissez vide si aucun) :","")||"";
   NEWS_ITEMS.push({ type:"pub", img:url.trim(), title:"", badge:"Pub", link:link.trim() });
@@ -5085,7 +5085,7 @@ function renderGallery(){
         +'<div class="play-icon">▶</div>'
         +'<div class="media-overlay"><span class="media-caption">'+(item.caption||"")+'</span></div>';
     } else {
-      div.innerHTML='<img src="'+item.url+'" alt="'+(item.caption||"")+'" loading="lazy" onerror="this.style.display=\'none\'">'
+      div.innerHTML='<img src="'+driveImageUrl(item.url)+'" alt="'+(item.caption||"")+'" loading="lazy" onerror="this.style.display=\'none\'">'
         +'<div class="media-overlay"><span class="media-caption">'+(item.caption||"")+'</span></div>';
     }
     grid.appendChild(div);
@@ -5121,13 +5121,30 @@ function getEmbedInfo(url){
   // Vimeo : vimeo.com/ID
   var vm=url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
   if(vm) return {kind:"vimeo",id:vm[1],embed:"https://player.vimeo.com/video/"+vm[1],thumb:null};
+  // Google Drive VIDÉO : drive.google.com/file/d/ID/... → lecteur preview en iframe
+  var gd=getDriveId(url);
+  if(gd) return {kind:"gdrive",id:gd,embed:"https://drive.google.com/file/d/"+gd+"/preview",thumb:null};
   return null;
 }
+// Extrait l'ID Google Drive depuis n'importe quel format de lien de partage
+function getDriveId(url){
+  if(!url || url.indexOf("drive.google.com")<0 && url.indexOf("docs.google.com")<0) return null;
+  var m = url.match(/\/file\/d\/([A-Za-z0-9_-]{10,})/)   // .../file/d/ID/view
+       || url.match(/[?&]id=([A-Za-z0-9_-]{10,})/)        // ...uc?id=ID
+       || url.match(/\/d\/([A-Za-z0-9_-]{10,})/);         // .../d/ID
+  return m ? m[1] : null;
+}
+// Convertit un lien Drive IMAGE en URL directe affichable dans <img>
+function driveImageUrl(url){
+  var id=getDriveId(url);
+  return id ? "https://lh3.googleusercontent.com/d/"+id+"=w1200" : url;
+}
+function isDriveLink(url){ return !!getDriveId(url); }
 function isDirectVideo(url){ return /\.(mp4|webm|ogg)(\?|$)/i.test(url||""); }
 
 function addGalleryItem(type){
   var msg = type==="video"
-    ? "Collez l'URL de votre vidéo :\n• YouTube (youtube.com / youtu.be)\n• Vimeo\n• ou lien direct .mp4"
+    ? "Collez l'URL de votre vidéo :\n• YouTube / Vimeo\n• Google Drive (vidéo partagée)\n• ou lien direct .mp4"
     : "Collez l'URL de votre image (.jpg / .png / .webp) :";
   var url=window.prompt(msg,"");
   if(!url||!url.trim()) return;
@@ -5151,7 +5168,7 @@ function openLightbox(idx){
   } else if(item.type==="video"||isDirectVideo(item.url)){
     content.innerHTML='<video src="'+item.url+'" controls autoplay style="max-width:90vw;max-height:85vh;border-radius:12px;display:block"></video>';
   } else {
-    content.innerHTML='<img src="'+item.url+'" alt="'+(item.caption||"")+'" style="max-width:90vw;max-height:85vh;border-radius:12px;display:block">';
+    content.innerHTML='<img src="'+driveImageUrl(item.url)+'" alt="'+(item.caption||"")+'" style="max-width:90vw;max-height:85vh;border-radius:12px;display:block">';
   }
   document.getElementById("media-lightbox").classList.add("show");
   document.body.style.overflow="hidden";
