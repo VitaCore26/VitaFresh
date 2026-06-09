@@ -5113,8 +5113,17 @@ function renderGallery(){
   var grid=document.getElementById("media-grid"); if(!grid) return;
   grid.innerHTML="";
   GALLERY_ITEMS.forEach(function(item,idx){
-    var embed=getEmbedInfo(item.url);
     var div=document.createElement("div"); div.className="media-item";
+    // PRIORITÉ au type "image" : une image (même Drive) s'affiche en image cliquable
+    if(item.type==="image"){
+      div.style.cursor="zoom-in";
+      div.onclick=function(){openLightbox(idx);};
+      div.innerHTML='<img src="'+driveImageUrl(item.url)+'" alt="'+(item.caption||"")+'" loading="lazy" onerror="this.style.display=\'none\'">'
+        +'<div class="media-overlay"><span class="media-caption">'+(item.caption||"")+'</span></div>';
+      grid.appendChild(div);
+      return;
+    }
+    var embed=getEmbedInfo(item.url);
     if(embed){
       // VIDÉO embarquée (YouTube/Vimeo/Drive) → lecteur intégré INLINE, comme YouTube
       div.classList.add("media-video");
@@ -5128,7 +5137,7 @@ function renderGallery(){
       div.innerHTML='<video src="'+item.url+'" controls playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;background:#000"></video>'
         +(item.caption?'<div class="media-caption-bar">'+item.caption+'</div>':'');
     } else {
-      // IMAGE → affichée automatiquement (clic = agrandir)
+      // Fallback image
       div.style.cursor="zoom-in";
       div.onclick=function(){openLightbox(idx);};
       div.innerHTML='<img src="'+driveImageUrl(item.url)+'" alt="'+(item.caption||"")+'" loading="lazy" onerror="this.style.display=\'none\'">'
@@ -5183,7 +5192,8 @@ function getDriveId(url){
 // Convertit un lien Drive IMAGE en URL directe affichable dans <img>
 function driveImageUrl(url){
   var id=getDriveId(url);
-  return id ? "https://lh3.googleusercontent.com/d/"+id+"=w1200" : url;
+  // Endpoint thumbnail Drive = le plus fiable pour afficher une image partagée
+  return id ? "https://drive.google.com/thumbnail?id="+id+"&sz=w1600" : url;
 }
 function isDriveLink(url){ return !!getDriveId(url); }
 function isDirectVideo(url){ return /\.(mp4|webm|ogg)(\?|$)/i.test(url||""); }
@@ -5191,14 +5201,20 @@ function isDirectVideo(url){ return /\.(mp4|webm|ogg)(\?|$)/i.test(url||""); }
 function addGalleryItem(type){
   var msg = type==="video"
     ? "Collez l'URL de votre vidéo :\n• YouTube / Vimeo\n• Google Drive (vidéo partagée)\n• ou lien direct .mp4"
-    : "Collez l'URL de votre image (.jpg / .png / .webp) :";
+    : "Collez l'URL de votre image :\n• .jpg / .png / .webp\n• ou Google Drive (image partagée)";
   var url=window.prompt(msg,"");
   if(!url||!url.trim()) return;
   url=url.trim();
-  // Auto-détecte le type réel : si c'est un lien YouTube/Vimeo/mp4 => video
   var embed=getEmbedInfo(url);
-  var realType = (embed || isDirectVideo(url) || type==="video") ? "video" : "image";
-  GALLERY_ITEMS.push({type:realType,url:url,caption:"",embed:embed?embed.kind:null});
+  var realType;
+  if(isDriveLink(url)){
+    // Drive : RESPECTE le choix de l'utilisateur (image OU vidéo), pas d'auto-détection
+    realType = type;
+  } else {
+    // Hors Drive : auto-détecte (YouTube/Vimeo/mp4 => vidéo)
+    realType = (embed || isDirectVideo(url) || type==="video") ? "video" : "image";
+  }
+  GALLERY_ITEMS.push({type:realType,url:url,caption:""});
   saveGalleryState(); renderGallery(); renderGalleryAdmin();
 }
 function removeGalleryItem(idx){
