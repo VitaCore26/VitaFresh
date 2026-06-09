@@ -5906,14 +5906,35 @@ function chatAskAI(userText){
   var bar=document.getElementById("chat-quickreplies-bar"); if(bar) bar.innerHTML="";
   chatHistory.push({role:"user", content:userText});
   chatShowTyping();
-  // Petit délai pour un rendu naturel (l'assistant "réfléchit")
-  setTimeout(function(){
+  // 1) Tente l'IA serveur (LLM avec contexte catalogue). 2) Fallback mots-clés.
+  var done=false;
+  var fallback=function(){
+    if(done) return; done=true;
     chatRemoveTyping();
     var r=chatBuildReply(userText);
     chatHistory.push({role:"assistant", content:r.text});
     chatAddMsg("bot", r.text);
     chatShowQuickReplies(r.qrs||[{label:"🛒 Catalogue",action:"catalogue"},{label:"💬 WhatsApp",action:"waDirect"}]);
-  }, 450);
+  };
+  var timeout=setTimeout(fallback, 9000); // si l'IA tarde trop → fallback
+  fetch(CONFIG.API_URL+"/api/ext/chat",{
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ message:userText, history:chatHistory.slice(-8) })
+  }).then(function(res){ return res.ok?res.json():null; })
+    .then(function(d){
+      if(done) return;
+      if(d && d.reply){
+        clearTimeout(timeout); done=true;
+        chatRemoveTyping();
+        chatHistory.push({role:"assistant", content:d.reply});
+        // Rendu markdown léger (**gras**, retours ligne)
+        chatAddMsg("bot", d.reply);
+        chatShowQuickReplies([{label:"🛒 Catalogue",action:"catalogue"},{label:"💬 WhatsApp",action:"waDirect"}]);
+      } else {
+        clearTimeout(timeout); fallback();   // LLM non configuré (501) → mots-clés
+      }
+    })
+    .catch(function(){ clearTimeout(timeout); fallback(); });
 }
 
 function chatSend(){
