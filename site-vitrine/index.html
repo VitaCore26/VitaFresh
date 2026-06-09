@@ -1362,6 +1362,11 @@ function setLang(lang){
       <div class="cfg-grp">🌍 Réseaux sociaux</div>
       <div class="cfg-f"><label>Facebook</label><input id="c-fb" type="url" placeholder="https://facebook.com/vitafreshmaroc"></div>
       <div class="cfg-f"><label>Instagram</label><input id="c-ig" type="url" placeholder="https://instagram.com/vitafreshmaroc"></div>
+      <div class="cfg-grp" style="margin-top:8px">📱 Réseaux sociaux (affichés sur le site)</div>
+      <div class="cfg-f"><label>TikTok</label><input id="c-tiktok" type="text" placeholder="@vitafresh ou URL"></div>
+      <div class="cfg-f"><label>YouTube</label><input id="c-youtube" type="url" placeholder="https://youtube.com/@vitafresh"></div>
+      <div class="cfg-f"><label>LinkedIn</label><input id="c-linkedin" type="text" placeholder="vitafresh ou URL"></div>
+      <div class="cfg-f"><label>X (Twitter)</label><input id="c-x" type="text" placeholder="@vitafresh ou URL"></div>
     </div>
     <div class="cfg-sec" id="s-stats">
       <div class="cfg-grp">📊 Chiffres clés — بدّل الأرقام هنا مباشرة</div>
@@ -2623,6 +2628,8 @@ GET  /api/ext/commandes/:id → suivi commande</div>
           <li><a id="footer-fb" href="#" style="display:none">Facebook</a></li>
           <li><a id="footer-ig" href="#" style="display:none">Instagram</a></li>
         </ul>
+        <!-- Réseaux sociaux (remplis depuis la config globale) -->
+        <div id="footer-socials" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px"></div>
       </div>
       <!-- قانوني / Légal / Legal -->
       <div>
@@ -3589,7 +3596,7 @@ function syncFromSupabase(){
           subscribeRealtime();
         })
         .catch(function(sbErr){
-          // ❌ Supabase erreur → afficher état préparation (PAS de catalogue local)
+          // ❌ Base de secours → afficher état préparation (PAS de catalogue local)
           PRODS=[];
           updateSBConnBox("sb",false,sbErr.message||String(sbErr));
           setERPBar("offline","Catalogue Vita Fresh — temporairement indisponible","Reconnectez-vous bientôt");
@@ -3607,7 +3614,7 @@ function updateSBConnBox(mode,ok,msg){
   } else {
     var dot2=document.getElementById("sb2-conn-dot"), lbl2=document.getElementById("sb2-conn-label"), sub2=document.getElementById("sb2-conn-sub");
     if(dot2) dot2.className="erp-conn-dot"+(ok?"":" err");
-    if(lbl2) lbl2.textContent=ok?"✅ Supabase connecté":"❌ Supabase erreur";
+    if(lbl2) lbl2.textContent=ok?"✅ Base de secours connectée":"❌ Base de secours";
     if(sub2) sub2.textContent=msg;
   }
 }
@@ -4106,6 +4113,7 @@ window.addStatRow=function(){
 function loadCfgFields(){
   function set(id,v){var el=document.getElementById(id);if(el)el.value=v||"";}
   set("c-wa",CFG.wa);set("c-email",CFG.email);set("c-addr",CFG.addr);set("c-fb",CFG.fb);set("c-ig",CFG.ig);
+  var soc=CFG.socials||{}; set("c-tiktok",soc.tiktok);set("c-youtube",soc.youtube);set("c-linkedin",soc.linkedin);set("c-x",soc.x);
   set("c-exp",CFG.exp);set("c-free",CFG.free);set("c-std",CFG.std);set("c-sb-url",CFG.sbUrl);set("c-sb-key",CFG.sbKey);
   set("c-rib",CFG.rib);set("c-rib-benef",CFG.ribBenef);set("c-rib-banque",CFG.ribBanque);
   // Nouveaux champs : URL app Pro, URL API, maintenance
@@ -4158,10 +4166,19 @@ function saveConfig(){
 // Publie contact + maintenance sur l'ERP → visible par tous les visiteurs (pas juste ce navigateur)
 function saveGlobalConfig(){
   var token = (typeof getAdminToken==="function" ? getAdminToken() : null) || "vita-bypass-2026";
+  function gv(id){var el=document.getElementById(id);return el?el.value.trim():"";}
+  var socials = {
+    instagram: CFG.ig || gv("c-ig"), facebook: CFG.fb || gv("c-fb"),
+    tiktok: gv("c-tiktok"), youtube: gv("c-youtube"),
+    linkedin: gv("c-linkedin"), x: gv("c-x"), whatsapp: CFG.wa
+  };
+  CFG.socials = socials;
   var body = {
     contact: { wa:CFG.wa, email:CFG.email, addr:CFG.addr, appUrl:CFG.appUrl||CONFIG.APP_URL, fb:CFG.fb, ig:CFG.ig },
+    socials: socials,
     maintenance: { active:CFG.maintenance===true, msg:CFG.maintenanceMsg||"" }
   };
+  renderSocials(socials);
   return fetch(CONFIG.API_URL+"/api/ext/site-config",{
     method:"POST",
     headers:{ "Content-Type":"application/json", "X-Admin-Token":token },
@@ -4263,8 +4280,30 @@ function loadGlobalConfig(){
         CFG.maintenance=d.maintenance.active===true;
         if(d.maintenance.msg) CFG.maintenanceMsg=d.maintenance.msg;
       }
+      // Réseaux sociaux GLOBAUX
+      if(d.socials){ CFG.socials=d.socials; renderSocials(d.socials); }
       updateContactLinks(); applyMaintenanceMode();
     }).catch(function(){});
+}
+// Affiche les icônes réseaux sociaux dans le footer (réseaux tendance)
+function renderSocials(s){
+  var box=document.getElementById("footer-socials"); if(!box||!s) return;
+  var NETS=[
+    {k:"instagram", icon:"📷", label:"Instagram", pre:"https://instagram.com/"},
+    {k:"tiktok",    icon:"🎵", label:"TikTok",    pre:"https://tiktok.com/@"},
+    {k:"facebook",  icon:"📘", label:"Facebook",  pre:"https://facebook.com/"},
+    {k:"youtube",   icon:"▶️", label:"YouTube",   pre:"https://youtube.com/"},
+    {k:"linkedin",  icon:"💼", label:"LinkedIn",  pre:"https://linkedin.com/company/"},
+    {k:"x",         icon:"✖️", label:"X",         pre:"https://x.com/"},
+    {k:"whatsapp",  icon:"💬", label:"WhatsApp",  pre:"https://wa.me/"}
+  ];
+  var html="";
+  NETS.forEach(function(n){
+    var v=s[n.k]; if(!v) return;
+    var href=/^https?:\/\//i.test(v)?v:(n.pre+String(v).replace(/^@/,""));
+    html+='<a href="'+href+'" target="_blank" rel="noreferrer" title="'+n.label+'" style="width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);font-size:18px;text-decoration:none">'+n.icon+'</a>';
+  });
+  box.innerHTML=html;
 }
 // Évite le doublon "…, Casablanca, Casablanca"
 function dedupeAddr(addr){

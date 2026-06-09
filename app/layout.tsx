@@ -49,7 +49,7 @@ export const viewport: Viewport = {
 // Inline script that runs BEFORE React hydrates — prevents the dark-mode
 // flash on first render (matches the ThemeToggle storage key).
 const noFlashScript = `
-(function(){try{var m=localStorage.getItem('vita-theme');var d=m==='dark'||(m==='system'||!m)&&matchMedia('(prefers-color-scheme: dark)').matches;if(d){document.documentElement.classList.add('dark');document.documentElement.style.colorScheme='dark'}}catch(_){}})()
+(function(){try{var m=localStorage.getItem('vita-theme');var h=new Date().getHours();var night=h>=19||h<7;var d=m==='dark'||(m==='system'&&matchMedia('(prefers-color-scheme: dark)').matches)||((m==='auto'||!m)&&night);if(d){document.documentElement.classList.add('dark');document.documentElement.style.colorScheme='dark'}}catch(_){}})()
 `.trim()
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
