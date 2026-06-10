@@ -920,7 +920,7 @@ const CONFIG = {
   WA_EQUIPE_2:     "212647333456",  // Direction
   HOURS:           "Lun–Sam : 06h00 – 18h00",
   APP_URL:         "https://app.vita-core.org/",
-  // ⚡ Same-origin : les appels passent par /api/* (proxy Vercel → f-l.vercel.app),
+  // ⚡ Same-origin : les appels passent par /api/* (proxy → erp.vita-core.org),
   // ce qui élimine les erreurs CORS / "Failed to fetch" cross-domain du navigateur.
   API_URL:         "",
   LOGO_URL:        "data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20130%20130'%3E%3Cpath%20d%3D'M65%2032C41%2032%2C22%2052%2C22%2078C22%20104%2C41%20120%2C65%20120C89%20120%2C108%20104%2C108%2078C108%2052%2C89%2032%2C65%2032Z'%20fill%3D'%25236CBC4E'%2F%3E%3Cpath%20d%3D'M41%2058L65%20100L89%2058'%20stroke%3D'white'%20stroke-width%3D'12'%20fill%3D'none'%20stroke-linejoin%3D'miter'%2F%3E%3Crect%20x%3D'62'%20y%3D'22'%20width%3D'6'%20height%3D'14'%20fill%3D'%25232D7A45'%2F%3E%3Cpath%20d%3D'M68%2026C80%2012%2C100%2010%2C110%2017C103%2034%2C84%2038%2C68%2026Z'%20fill%3D'%25232D7A45'%2F%3E%3C%2Fsvg%3E",
@@ -1423,7 +1423,7 @@ function setLang(lang){
         <div class="cfg-hint">Lien vers FreshLink Pro affiché sur le site (footer, boutons « Accéder à l'app »).</div>
       </div>
 
-      <div class="cfg-f"><label>🔌 URL de l'API catalogue</label><input id="c-api-url" type="url" placeholder="https://f-l.vercel.app"><div class="cfg-hint">Base de l'API ERP (sans /api/ext/catalogue). Ex : https://f-l.vercel.app</div></div>
+      <div class="cfg-f"><label>🔌 URL de l'API catalogue</label><input id="c-api-url" type="url" placeholder="https://erp.vita-core.org"><div class="cfg-hint">Base de l'API ERP (sans /api/ext/catalogue). Ex : https://erp.vita-core.org</div></div>
       <div class="cfg-f"><label>🗄️ URL base de secours</label><input id="c-sb-url" type="url" placeholder="https://xxx.supabase.co"><div class="cfg-hint">URL de la base de données (mode secours).</div></div>
       <div class="cfg-f"><label>🔑 Clé publique de secours</label><input id="c-sb-key" type="text" placeholder="eyJhbGci..."><div class="cfg-hint">Clé publique uniquement — jamais la clé privée.</div></div>
       <button class="test-btn" onclick="testSupabase()">🔄 Tester les connexions</button>
@@ -2281,7 +2281,32 @@ GET  /api/ext/commandes/:id → suivi commande</div>
                 <option value="particulier" data-i18n="opt_type_5">Particulier</option>
               </select>
             </div>
-            <div class="form-group"><label data-i18n="lbl_ville">Ville</label><input type="text" id="fVille" placeholder="Casablanca"/></div>
+            <div class="form-group"><label data-i18n="lbl_ville">Ville</label>
+              <select id="fVilleSelect" onchange="onVilleChange()">
+                <option value="Casablanca">Casablanca</option>
+                <option value="Mohammedia">Mohammedia</option>
+                <option value="Rabat">Rabat</option>
+                <option value="Salé">Salé</option>
+                <option value="Kénitra">Kénitra</option>
+                <option value="Marrakech">Marrakech</option>
+                <option value="Fès">Fès</option>
+                <option value="Meknès">Meknès</option>
+                <option value="Tanger">Tanger</option>
+                <option value="Tétouan">Tétouan</option>
+                <option value="Agadir">Agadir</option>
+                <option value="Oujda">Oujda</option>
+                <option value="El Jadida">El Jadida</option>
+                <option value="Safi">Safi</option>
+                <option value="Béni Mellal">Béni Mellal</option>
+                <option value="Nador">Nador</option>
+                <option value="Settat">Settat</option>
+                <option value="Berrechid">Berrechid</option>
+                <option value="Khouribga">Khouribga</option>
+                <option value="Témara">Témara</option>
+                <option value="autre">Autre…</option>
+              </select>
+              <input type="text" id="fVille" placeholder="Saisissez votre ville" style="display:none;margin-top:8px"/>
+            </div>
           </div>
           <div class="form-group"><label data-i18n="lbl_volume">Volume mensuel</label>
             <select id="fVolume">
@@ -4454,8 +4479,8 @@ async function doLogin(e){
       } else if(data.redirect_app){
         // Compte CHR/Marchand → diriger vers l'application professionnelle
         errEl.innerHTML='📱 <strong>Compte professionnel CHR/Marchand</strong><br>'
-          +'<span style="font-size:12px">Votre espace est accessible via l\'application FreshLink Pro.</span><br>'
-          +'<a href="https://f-l.vercel.app" target="_blank" style="display:inline-block;margin-top:8px;padding:7px 16px;background:#1a4f2a;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none">Ouvrir FreshLink Pro →</a>';
+          +'<span style="font-size:12px">Votre espace pro est accessible sur l\'application Vita Fresh.</span><br>'
+          +'<a href="https://erp.vita-core.org" target="_blank" style="display:inline-block;margin-top:8px;padding:7px 16px;background:#1a4f2a;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none">Ouvrir mon espace pro →</a>';
       } else {
         errEl.textContent=data.error||t("login_err_api");
       }
@@ -4926,6 +4951,20 @@ function getSession(){
 }
 function clearSession(){ localStorage.removeItem("fl_session"); }
 
+// ── VILLE : liste déroulante + "Autre" → champ libre ──
+function onVilleChange(){
+  var sel=document.getElementById("fVilleSelect"), inp=document.getElementById("fVille");
+  if(!sel||!inp) return;
+  if(sel.value==="autre"){ inp.style.display="block"; inp.focus(); }
+  else { inp.style.display="none"; inp.value=""; }
+}
+function getVilleValue(){
+  var sel=document.getElementById("fVilleSelect"), inp=document.getElementById("fVille");
+  if(sel && sel.value==="autre") return (inp&&inp.value.trim())||"";
+  return sel ? sel.value : (inp?inp.value.trim():"");
+}
+window.onVilleChange=onVilleChange; window.getVilleValue=getVilleValue;
+
 // ── FORMULAIRE PRO ──
 async function submitProForm(e){
   e.preventDefault();
@@ -4934,7 +4973,7 @@ async function submitProForm(e){
   msg.className="form-msg";
   if(!nom||!tel||!type){msg.textContent=t("form_err");msg.classList.add("error");return;}
   btn.disabled=true; btn.textContent="⏳";
-  var payload={nom,telephone:tel,type,societe:document.getElementById("fSociete").value.trim(),email:document.getElementById("fEmail").value.trim(),ville:document.getElementById("fVille").value.trim(),volume:document.getElementById("fVolume").value,message:document.getElementById("fMsg").value.trim(),source:"site-web",lang:currentLang};
+  var payload={nom,telephone:tel,type,societe:document.getElementById("fSociete").value.trim(),email:document.getElementById("fEmail").value.trim(),ville:getVilleValue(),volume:document.getElementById("fVolume").value,message:document.getElementById("fMsg").value.trim(),source:"site-web",lang:currentLang};
   var ok=false;
   try{var r=await fetch(CONFIG.API_URL+"/api/ext/demande-acces",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});ok=r.ok;}catch{ok=false;}
   if(!ok){var wa=encodeURIComponent("📋 *Demande Accès Pro — Vita Fresh*\n\n👤 "+payload.nom+"\n📱 "+payload.telephone+"\n🏷️ "+payload.type+"\n📍 "+payload.ville+"\n💬 "+payload.message);window.open("https://wa.me/"+CFG.wa+"?text="+wa,"_blank");}
