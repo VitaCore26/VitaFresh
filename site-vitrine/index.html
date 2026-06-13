@@ -332,6 +332,14 @@ html[dir="rtl"] .portal-logout{margin-left:0;margin-right:auto}
 .portal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px}
 .portal-stat-card{background:#fff;border:1.5px solid var(--gl);border-radius:var(--radius);padding:18px}
 .portal-stat-label{font-size:12px;color:var(--gy);font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px}
+/* Espace Pro (CHR/Marchand) */
+.pro-tab{padding:8px 16px;border-radius:10px;border:1.5px solid var(--gl);background:#fff;font-size:13px;font-weight:700;color:#374151;cursor:pointer;transition:.2s}
+.pro-tab:hover{border-color:#1e5631;color:#1e5631}
+.pro-tab.active{background:#1e5631;border-color:#1e5631;color:#fff}
+.pro-table{width:100%;border-collapse:collapse;font-size:13px}
+.pro-table th{text-align:left;padding:9px 10px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #e5e7eb}
+.pro-table td{padding:10px;border-bottom:1px solid #f3f4f6}
+.pro-pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
 .portal-stat-value{font-size:22px;font-weight:800}
 .portal-stat-value.green{color:var(--g1)}
 .portal-section-title{font-size:16px;font-weight:700;margin-bottom:13px}
@@ -1016,6 +1024,7 @@ const TEXTS = {
     cat_tag:"Catalogue", cat_title:"Nos produits frais", cat_sub:"Synchronisé avec FreshLink ERP · Prix selon profil",
     cat_info_h:"Tarifs personnalisés par profil",
     cat_info_p:"CHR, marchands et particuliers — des prix adaptés à chaque type de client.",
+    cat_price_note:"Les prix affichés sont indicatifs, pour les <strong>particuliers non enregistrés</strong>. Les <strong>CHR et marchands</strong> bénéficient de tarifs négociés, visibles dans leur compte une fois connectés.",
     cat_wa:"📦 Commander par WhatsApp",
     btn_add_cart:"Ajouter", btn_fav:"♡",
     price_on_request:"Prix sur demande",
@@ -1122,6 +1131,7 @@ const TEXTS = {
     cat_tag:"الكتالوج", cat_title:"المنتجات الطازة ديالنا", cat_sub:"مزامن مع FreshLink ERP · الأثمنة حسب ملفك",
     cat_info_h:"أثمنة شخصية حسب ملفك",
     cat_info_p:"CHR، التجار والأفراد — أثمنة مناسبة لكل زبون.",
+    cat_price_note:"الأثمنة المعروضة إرشادية، خاصة <strong>بالأفراد غير المسجلين</strong>. <strong>CHR والتجار</strong> كيستافدو من أثمنة تفاوضية كتبان فحسابهم من بعد ما يدخلو.",
     cat_wa:"📦 طلب عبر واتساب",
     btn_add_cart:"زيد", btn_fav:"♡",
     price_on_request:"الثمن حسب الطلب",
@@ -1228,6 +1238,7 @@ const TEXTS = {
     cat_tag:"Catalogue", cat_title:"Our fresh products", cat_sub:"Synced with FreshLink ERP · Prices by profile",
     cat_info_h:"Personalised pricing by profile",
     cat_info_p:"CHR, merchants and individuals — prices adapted to each client type.",
+    cat_price_note:"Displayed prices are indicative, for <strong>non-registered individuals</strong>. <strong>CHR and merchants</strong> get negotiated rates, visible in their account once logged in.",
     cat_wa:"📦 Order via WhatsApp",
     btn_add_cart:"Add", btn_fav:"♡",
     price_on_request:"Price on request",
@@ -1909,7 +1920,11 @@ GET  /api/ext/commandes/:id → suivi commande</div>
       </div>
       <a href="#" class="btn-wa-green" onclick="orderWhatsApp(event)"><span data-i18n="cat_wa">📦 Commander par WhatsApp</span></a>
     </div>
-    <div class="cats" style="grid-template-columns:repeat(3,1fr);gap:8px" id="cats-grid">
+    <div style="margin-top:16px;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px 16px;display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#78350f;line-height:1.6">
+      <span style="font-size:18px;flex-shrink:0">ℹ️</span>
+      <span data-i18n="cat_price_note">Les prix affichés sont indicatifs, pour les <strong>particuliers non enregistrés</strong>. Les <strong>CHR et marchands</strong> bénéficient de tarifs négociés, visibles dans leur compte une fois connectés.</span>
+    </div>
+    <div class="cats" style="grid-template-columns:repeat(3,1fr);gap:8px;margin-top:24px" id="cats-grid">
       <div class="ccat on" onclick="fcat('tous',this)" data-cat="tous"><span class="ccat-em">🛒</span><div class="ccat-n" data-i18n="cat_all">Tout voir</div><div class="ccat-c" id="cat-count-tous">...</div></div>
       <div class="ccat" onclick="fcat('legumes',this)" data-cat="legumes"><span class="ccat-em">🥦</span><div class="ccat-n">Légumes</div><div class="ccat-c" id="cat-count-legumes">...</div></div>
       <div class="ccat" onclick="fcat('fruits',this)" data-cat="fruits"><span class="ccat-em">🍎</span><div class="ccat-n">Fruits</div><div class="ccat-c" id="cat-count-fruits">...</div></div>
@@ -2050,13 +2065,17 @@ GET  /api/ext/commandes/:id → suivi commande</div>
         <div class="fg"><label data-i18n="lbl_addr">Adresse complète — Casablanca</label><input id="f-adr" type="text" placeholder="N° rue, quartier, bâtiment..."></div>
         </div><!-- end guest-form-block -->
         <div class="fg"><label data-i18n="lbl_zone">Quartier / Zone</label>
-          <select id="f-zone">
+          <select id="f-zone" onchange="onZoneChange()">
             <option value="" data-i18n="lbl_zone_ph">— Sélectionnez votre quartier —</option>
             <option>Maarif</option><option>Ain Diab / Anfa</option><option>Centre-ville</option>
+            <option>Gauthier</option><option>Bourgogne</option><option>Oasis</option>
+            <option>Californie</option><option>Sidi Maarouf</option><option>2 Mars</option>
             <option>Hay Mohammadi</option><option>Sidi Bernoussi</option><option>Derb Sultan</option>
             <option>Moulay Rachid</option><option>Ain Sebaa</option><option>Hay Hassani</option>
-            <option>Bernoussi / Sidi Moumen</option><option>Autre quartier</option>
+            <option>Bernoussi / Sidi Moumen</option><option value="autre">Autre quartier…</option>
           </select>
+          <input type="text" id="f-zone-autre" placeholder="Précisez votre quartier" style="display:none;margin-top:8px"
+            oninput="document.getElementById('f-zone').setAttribute('data-autre', this.value)"/>
         </div>
         <div class="fsec" data-i18n="ord_delivery_title">🚚 Mode de livraison</div>
         <div class="dopts">
@@ -2150,6 +2169,29 @@ GET  /api/ext/commandes/:id → suivi commande</div>
       </div>
     </div>
 
+    <!-- ── ESPACE FOURNISSEUR — commandes reçues, livraisons, paiements, solde dû ── -->
+    <div id="supplier-portal" style="display:none">
+      <div style="background:linear-gradient(135deg,#3b2f0b,#7c5e10);border-radius:16px;padding:18px 22px;color:#fff;display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+        <span style="font-size:24px">🏭</span>
+        <div style="flex:1;min-width:200px">
+          <div style="font-weight:800;font-size:15px">Espace Fournisseur</div>
+          <div style="font-size:12px;opacity:.85">Commandes reçues · Livraisons · Paiements — synchronisé avec VitaFresh</div>
+        </div>
+        <div id="sup-solde-badge" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);padding:7px 14px;border-radius:10px;font-size:13px;font-weight:800">Solde dû : — DH</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px" id="sup-tabs">
+        <button class="pro-tab active" data-tab="commandes" onclick="supTab('commandes',this)">📋 Commandes</button>
+        <button class="pro-tab" data-tab="receptions" onclick="supTab('receptions',this)">📦 Réceptions</button>
+        <button class="pro-tab" data-tab="paiements" onclick="supTab('paiements',this)">💰 Paiements</button>
+      </div>
+      <div id="sup-content" style="background:#fff;border:1.5px solid var(--gl);border-radius:var(--radius);padding:18px;min-height:120px">
+        <div style="text-align:center;color:#9ca3af;padding:20px 0">Chargement…</div>
+      </div>
+    </div>
+
+    <!-- ── Zone client (masquée pour les fournisseurs) ── -->
+    <div id="client-zone">
+
     <!-- ── Stats rapides ── -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px">
       <div style="background:#fff;border-radius:16px;border:1.5px solid #d1fae5;padding:18px 20px;text-align:center;box-shadow:0 2px 12px rgba(30,86,49,.06)">
@@ -2189,6 +2231,26 @@ GET  /api/ext/commandes/:id → suivi commande</div>
       </div>
     </div>
 
+    <!-- ── ESPACE PRO (CHR / Marchand) — paiements, livraisons, crédit ── -->
+    <div id="pro-portal" style="display:none;margin-bottom:24px">
+      <div style="background:linear-gradient(135deg,#0b3d1a,#1e5631);border-radius:16px;padding:18px 22px;color:#fff;display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+        <span style="font-size:24px">💼</span>
+        <div style="flex:1;min-width:200px">
+          <div style="font-weight:800;font-size:15px">Espace Professionnel</div>
+          <div style="font-size:12px;opacity:.8">Paiements · Livraisons · Crédit — synchronisé avec votre compte</div>
+        </div>
+        <div id="pro-wallet-badge" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);padding:7px 14px;border-radius:10px;font-size:13px;font-weight:800">Wallet : — DH</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px" id="pro-tabs">
+        <button class="pro-tab active" data-tab="paiements" onclick="proTab('paiements',this)">💳 Paiements</button>
+        <button class="pro-tab" data-tab="livraisons" onclick="proTab('livraisons',this)">🚚 Livraisons</button>
+        <button class="pro-tab" data-tab="credit" onclick="proTab('credit',this)">📑 Crédit & Avoirs</button>
+      </div>
+      <div id="pro-content" style="background:#fff;border:1.5px solid var(--gl);border-radius:var(--radius);padding:18px;min-height:120px">
+        <div style="text-align:center;color:#9ca3af;padding:20px 0">Chargement…</div>
+      </div>
+    </div>
+
     <!-- ── Actions rapides ── -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px">
       <a href="#commander" onclick="document.getElementById('commander').scrollIntoView({behavior:'smooth'});return false;" style="background:#fff;border:1.5px solid #d1fae5;border-radius:16px;padding:18px 20px;text-decoration:none;display:flex;align-items:center;gap:12px;color:#1e5631;font-weight:700;font-size:14px;box-shadow:0 2px 12px rgba(30,86,49,.06);transition:.2s" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='#fff'">
@@ -2201,6 +2263,8 @@ GET  /api/ext/commandes/:id → suivi commande</div>
         <span style="font-size:28px">⚙️</span><div><div>Mon compte</div><div style="font-size:11px;font-weight:500;color:#6b7280;margin-top:2px">Modifier mes infos</div></div>
       </button>
     </div>
+
+    </div><!-- /client-zone -->
 
   </div>
 </section>
@@ -2352,27 +2416,27 @@ GET  /api/ext/commandes/:id → suivi commande</div>
     </div>
     <div class="wa-section-grid" style="grid-template-columns:repeat(3,1fr)">
       <div class="wa-card">
-        <div class="wa-card-icon">📲</div>
-        <div class="wa-card-title">Commander directement</div>
-        <div class="wa-card-desc">Envoyez votre liste de courses à notre équipe. Réponse rapide garantie — traitement prioritaire.</div>
-        <a href="#" onclick="orderWhatsApp(event)" class="btn-wa-join">
-          <span style="font-size:20px">💬</span>Commander maintenant
+        <div class="wa-card-icon">🛒</div>
+        <div class="wa-card-title">Groupe Particuliers</div>
+        <div class="wa-card-desc">Commandez en famille — promos, paniers frais et nouveautés pour les particuliers.</div>
+        <a href="https://chat.whatsapp.com/CEVDRKYpri5BSuAMjxwNnn" target="_blank" class="btn-wa-join">
+          <span style="font-size:20px">👨‍👩‍👧</span><span>Rejoindre — Particuliers</span>
         </a>
       </div>
       <div class="wa-card">
-        <div class="wa-card-icon">📦</div>
-        <div class="wa-card-title" data-i18n="wa_order_title">Groupe Commandes</div>
-        <div class="wa-card-desc" data-i18n="wa_order_desc">Rejoignez notre groupe WhatsApp dédié. Promos, disponibilités et actualités en temps réel.</div>
+        <div class="wa-card-icon">🍽️</div>
+        <div class="wa-card-title">Groupe CHR</div>
+        <div class="wa-card-desc">Hôtels, restaurants & cafés — disponibilités, tarifs pro et commandes prioritaires.</div>
         <a href="https://chat.whatsapp.com/D11jvGbbWd5Kc2pyXl79SK" target="_blank" class="btn-wa-join">
-          <span style="font-size:20px">👥</span><span data-i18n="wa_join">Rejoindre le groupe</span>
+          <span style="font-size:20px">👨‍🍳</span><span>Rejoindre — CHR</span>
         </a>
       </div>
       <div class="wa-card">
-        <div class="wa-card-icon">🤝</div>
-        <div class="wa-card-title" data-i18n="wa_signup_title">Devenir Partenaire</div>
-        <div class="wa-card-desc" data-i18n="wa_signup_desc">Rejoignez notre réseau de partenaires professionnels et accédez aux tarifs exclusifs.</div>
-        <a href="https://chat.whatsapp.com/K9zqxKXd3qLEIMLt3Oh3lI" target="_blank" class="btn-wa-join">
-          <span style="font-size:20px">🌿</span><span data-i18n="wa_join">Rejoindre le groupe</span>
+        <div class="wa-card-icon">🏪</div>
+        <div class="wa-card-title">Groupe Marchands</div>
+        <div class="wa-card-desc">Détaillants & superettes — prix de gros, volumes et réassort régulier.</div>
+        <a href="https://chat.whatsapp.com/CWalIaX6GaMDzU5E4Yakxf" target="_blank" class="btn-wa-join">
+          <span style="font-size:20px">📦</span><span>Rejoindre — Marchands</span>
         </a>
       </div>
     </div>
@@ -2653,8 +2717,9 @@ GET  /api/ext/commandes/:id → suivi commande</div>
       <div>
         <div class="footer-heading" data-i18n="ft_wa_title">WhatsApp</div>
         <ul class="footer-links">
-          <li><a href="https://chat.whatsapp.com/D11jvGbbWd5Kc2pyXl79SK" target="_blank" data-i18n="wa_order_title">📦 Groupe Commandes</a></li>
-          <li><a href="https://chat.whatsapp.com/K9zqxKXd3qLEIMLt3Oh3lI" target="_blank" data-i18n="wa_signup_title">👥 Groupe Partenaires</a></li>
+          <li><a href="https://chat.whatsapp.com/CEVDRKYpri5BSuAMjxwNnn" target="_blank">🛒 Groupe Particuliers</a></li>
+          <li><a href="https://chat.whatsapp.com/D11jvGbbWd5Kc2pyXl79SK" target="_blank">🍽️ Groupe CHR</a></li>
+          <li><a href="https://chat.whatsapp.com/CWalIaX6GaMDzU5E4Yakxf" target="_blank">🏪 Groupe Marchands</a></li>
           <li><a id="footer-wa2" href="#" data-i18n="contact_direct">💬 Contact direct</a></li>
           <li><a id="footer-fb" href="#" style="display:none">Facebook</a></li>
           <li><a id="footer-ig" href="#" style="display:none">Instagram</a></li>
@@ -3990,7 +4055,7 @@ function submitOrder(){
   var items=Object.values(cart), sub=items.reduce(function(s,p){return s+p.p*p.qty;},0);
   var df=delMode==="exp"?CFG.exp:(sub>=CFG.free?0:CFG.std), tot=sub+df;
   var co=(document.getElementById("f-co")||{}).value||"", email=document.getElementById("f-email").value||"";
-  var zone=document.getElementById("f-zone").value, notes=document.getElementById("f-notes").value, pay=document.getElementById("f-pay").value;
+  var zone=(typeof getZoneValue==="function"?getZoneValue():document.getElementById("f-zone").value), notes=document.getElementById("f-notes").value, pay=document.getElementById("f-pay").value;
   var preps=Array.from(document.querySelectorAll(".popt.on")).map(function(e){return e.textContent.trim();}).join(", ");
   virJustif=(document.getElementById("vir-ref")||{}).value||"";
   var lignes=items.map(function(p){return{articleId:p.id,articleNom:p.n,unite:p.u||"kg",quantite:p.qty,prixUnitaire:p.p,prixVente:p.p,total:Math.round(p.p*p.qty*100)/100,surCommande:!p.dispo};});
@@ -4797,7 +4862,172 @@ function showPortal(data){
   var setVal=function(id,val){var el=document.getElementById(id);if(el)el.value=val||"";};
   setVal("f-nom",userName); setVal("f-tel",userTel); setVal("f-email",userEmail); setVal("f-adr",userAdr);
   var adrVis=document.getElementById("f-adr-visible"); if(adrVis&&userAdr) adrVis.value=userAdr;
+
+  // ── Espace PRO (CHR / Marchand) : paiements, livraisons, crédit ──
+  var cat=String(user.categorie||client.categorie||"").toLowerCase();
+  var role=String(user.role||client.role||"").toLowerCase();
+  var isFournisseur=role==="fournisseur"||cat==="fournisseur"||data.isSupplier===true;
+  var isPro=!isFournisseur&&(data.isPro===true||cat==="chr"||cat==="marchand");
+
+  var clientZone=document.getElementById("client-zone");
+  var supBox=document.getElementById("supplier-portal");
+  var proBox=document.getElementById("pro-portal");
+
+  if(isFournisseur){
+    // Fournisseur : on masque toute la zone client, on montre l'espace fournisseur
+    if(clientZone) clientZone.style.display="none";
+    if(supBox){ supBox.style.display="block"; loadSupplierPortal(user.fournisseurId||client.fournisseurId||user.id||client.id||""); }
+  } else {
+    if(clientZone) clientZone.style.display="block";
+    if(supBox) supBox.style.display="none";
+    if(proBox){
+      proBox.style.display=isPro?"block":"none";
+      if(isPro) loadProPortal(user.clientId||client.id||"");
+    }
+  }
 }
+
+// ══ ESPACE FOURNISSEUR — données du portail (service-role côté ERP) ══
+var SUP_DATA=null, SUP_TAB="commandes";
+function loadSupplierPortal(supId){
+  var box=document.getElementById("sup-content");
+  if(!supId){ if(box) box.innerHTML='<div style="color:#9ca3af;text-align:center;padding:16px 0">Compte non relié à une fiche fournisseur — contactez VitaFresh.</div>'; return; }
+  fetch(CONFIG.API_URL+"/api/portal/supplier/"+encodeURIComponent(supId),{cache:"no-store"})
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(d){
+      if(!d||d.error){ if(box) box.innerHTML='<div style="color:#9ca3af;text-align:center;padding:16px 0">Données fournisseur indisponibles pour le moment.</div>'; return; }
+      SUP_DATA=d;
+      var b=document.getElementById("sup-solde-badge");
+      if(b) b.textContent="Solde dû : "+Number(d.stats&&d.stats.soldeDu||0).toLocaleString("fr-FR")+" DH";
+      renderSupTab();
+    }).catch(function(){ if(box) box.innerHTML='<div style="color:#9ca3af;text-align:center;padding:16px 0">Connexion impossible — réessayez.</div>'; });
+}
+function supTab(tab,btn){
+  SUP_TAB=tab;
+  document.querySelectorAll("#sup-tabs .pro-tab").forEach(function(b){b.classList.remove("active");});
+  if(btn) btn.classList.add("active");
+  renderSupTab();
+}
+function renderSupTab(){
+  var box=document.getElementById("sup-content"); if(!box||!SUP_DATA) return;
+  var d=SUP_DATA, st=d.stats||{};
+  if(SUP_TAB==="commandes"){
+    var pos=d.purchaseOrders||[];
+    box.innerHTML=
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px">'
+      +'<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px"><div style="font-size:11px;color:#b45309;font-weight:700">COMMANDES</div><div style="font-size:20px;font-weight:800;color:#78350f">'+(st.totalPOs||0)+'</div></div>'
+      +'<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px"><div style="font-size:11px;color:#15803d;font-weight:700">TOTAL ACHATS</div><div style="font-size:16px;font-weight:800;color:#14532d">'+proMoney(st.totalAchats)+'</div></div>'
+      +'<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px"><div style="font-size:11px;color:#b91c1c;font-weight:700">SOLDE DÛ</div><div style="font-size:16px;font-weight:800;color:#7f1d1d">'+proMoney(st.soldeDu)+'</div></div>'
+      +'</div>'
+      +(pos.length
+        ? '<table class="pro-table"><thead><tr><th>N° / Date</th><th>Statut</th><th style="text-align:right">Montant</th></tr></thead><tbody>'
+          +pos.map(function(p){
+            return '<tr><td><strong>'+(p.numero||String(p.id||"").slice(0,12))+'</strong><br><span style="color:#9ca3af;font-size:11px">'+(p.date||p.dateCommande||"")+'</span></td>'
+              +'<td><span class="pro-pill" style="background:#dbeafe;color:#1e40af">'+(p.statut||"—")+'</span></td>'
+              +'<td style="text-align:right;font-weight:800">'+proMoney(p.total||p.montantTotal||p.montant)+'</td></tr>';
+          }).join("")+'</tbody></table>'
+        : '<div style="text-align:center;color:#9ca3af;padding:14px 0">Aucune commande reçue.</div>');
+  } else if(SUP_TAB==="receptions"){
+    var recs=d.receptions||[];
+    box.innerHTML = recs.length
+      ? '<table class="pro-table"><thead><tr><th>Réception / Date</th><th>Bon d\'achat</th><th>Statut</th></tr></thead><tbody>'
+        +recs.map(function(r){
+          return '<tr><td><strong>'+(r.numero||String(r.id||"").slice(0,12))+'</strong><br><span style="color:#9ca3af;font-size:11px">'+(r.date||r.dateReception||"")+'</span></td>'
+            +'<td style="font-family:monospace;font-size:11px;color:#6b7280">'+(r.bonAchatId||"—")+'</td>'
+            +'<td><span class="pro-pill" style="background:#dcfce7;color:#166534">'+(r.statut||"reçu")+'</span></td></tr>';
+        }).join("")+'</tbody></table>'
+      : '<div style="text-align:center;color:#9ca3af;padding:14px 0">Aucune réception enregistrée.</div>';
+  } else {
+    var pays=d.payments||[];
+    box.innerHTML=
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px">'
+      +'<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px"><div style="font-size:11px;color:#15803d;font-weight:700">TOTAL PAYÉ</div><div style="font-size:16px;font-weight:800;color:#14532d">'+proMoney(st.totalPaye)+'</div></div>'
+      +'<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px"><div style="font-size:11px;color:#b91c1c;font-weight:700">RESTE DÛ</div><div style="font-size:16px;font-weight:800;color:#7f1d1d">'+proMoney(st.soldeDu)+'</div></div>'
+      +'</div>'
+      +(pays.length
+        ? '<table class="pro-table"><thead><tr><th>Paiement / Date</th><th>Mode</th><th style="text-align:right">Montant</th></tr></thead><tbody>'
+          +pays.map(function(p){return '<tr><td><strong>'+(p.numero||String(p.id||"").slice(0,10))+'</strong><br><span style="color:#9ca3af;font-size:11px">'+(p.date||"")+'</span></td><td style="font-size:12px">'+(p.mode||p.modalite||"—")+'</td><td style="text-align:right;font-weight:800;color:#15803d">'+proMoney(p.montant)+'</td></tr>';}).join("")
+          +'</tbody></table>'
+        : '<div style="text-align:center;color:#9ca3af;padding:14px 0">Aucun paiement enregistré.</div>');
+  }
+}
+window.supTab=supTab; window.loadSupplierPortal=loadSupplierPortal;
+
+// ══ ESPACE PRO — données du portail (service-role côté ERP) ══
+var PRO_DATA=null, PRO_TAB="paiements";
+function loadProPortal(clientId){
+  var box=document.getElementById("pro-content");
+  if(!clientId){ if(box) box.innerHTML='<div style="color:#9ca3af;text-align:center;padding:16px 0">Compte non relié à une fiche client — contactez votre commercial.</div>'; return; }
+  fetch(CONFIG.API_URL+"/api/portal/client/"+encodeURIComponent(clientId),{cache:"no-store"})
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(d){
+      if(!d||d.error){ if(box) box.innerHTML='<div style="color:#9ca3af;text-align:center;padding:16px 0">Données pro indisponibles pour le moment.</div>'; return; }
+      PRO_DATA=d;
+      var w=document.getElementById("pro-wallet-badge");
+      if(w) w.textContent="Wallet : "+Number(d.wallet&&d.wallet.balance||0).toLocaleString("fr-FR")+" DH";
+      renderProTab();
+    }).catch(function(){ if(box) box.innerHTML='<div style="color:#9ca3af;text-align:center;padding:16px 0">Connexion impossible — réessayez.</div>'; });
+}
+function proTab(tab,btn){
+  PRO_TAB=tab;
+  document.querySelectorAll("#pro-tabs .pro-tab").forEach(function(b){b.classList.remove("active");});
+  if(btn) btn.classList.add("active");
+  renderProTab();
+}
+function proMoney(n){ return Number(n||0).toLocaleString("fr-FR",{minimumFractionDigits:2})+" DH"; }
+function renderProTab(){
+  var box=document.getElementById("pro-content"); if(!box||!PRO_DATA) return;
+  var d=PRO_DATA;
+  if(PRO_TAB==="paiements"){
+    var inv=d.invoices||[];
+    var impayees=inv.filter(function(i){return i.statut!=="payee"&&i.statut!=="paye";});
+    var du=impayees.reduce(function(s,i){return s+Number(i.montantTTC||i.montant||0);},0);
+    box.innerHTML=
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px">'
+      +'<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px"><div style="font-size:11px;color:#15803d;font-weight:700">FACTURES</div><div style="font-size:20px;font-weight:800;color:#14532d">'+inv.length+'</div></div>'
+      +'<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px"><div style="font-size:11px;color:#b91c1c;font-weight:700">IMPAYÉES</div><div style="font-size:20px;font-weight:800;color:#7f1d1d">'+impayees.length+'</div></div>'
+      +'<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px"><div style="font-size:11px;color:#b45309;font-weight:700">MONTANT DÛ</div><div style="font-size:18px;font-weight:800;color:#78350f">'+proMoney(du)+'</div></div>'
+      +'</div>'
+      +(inv.length
+        ? '<table class="pro-table"><thead><tr><th>N° / Date</th><th>Statut</th><th style="text-align:right">Montant</th></tr></thead><tbody>'
+          +inv.map(function(i){
+            var paid=(i.statut==="payee"||i.statut==="paye");
+            return '<tr><td><strong>'+(i.numero||String(i.id||"").slice(0,12))+'</strong><br><span style="color:#9ca3af;font-size:11px">'+(i.date||"")+'</span></td>'
+              +'<td><span class="pro-pill" style="background:'+(paid?"#dcfce7;color:#166534":"#fee2e2;color:#991b1b")+'">'+(paid?"Payée":"Impayée")+'</span></td>'
+              +'<td style="text-align:right;font-weight:800">'+proMoney(i.montantTTC||i.montant)+'</td></tr>';
+          }).join("")+'</tbody></table>'
+        : '<div style="text-align:center;color:#9ca3af;padding:14px 0">Aucune facture pour le moment.</div>');
+  } else if(PRO_TAB==="livraisons"){
+    var bls=d.bonsLivraison||[];
+    box.innerHTML = bls.length
+      ? '<table class="pro-table"><thead><tr><th>BL / Date</th><th>Commande</th><th>Statut</th></tr></thead><tbody>'
+        +bls.map(function(b){
+          var enc=(b.statut==="encaissé"||b.statut==="encaisse");
+          return '<tr><td><strong>'+(b.numero||String(b.id||"").slice(0,12))+'</strong><br><span style="color:#9ca3af;font-size:11px">'+(b.date||"")+'</span></td>'
+            +'<td style="font-family:monospace;font-size:11px;color:#6b7280">'+(b.commandeId||"—")+'</td>'
+            +'<td><span class="pro-pill" style="background:'+(enc?"#dcfce7;color:#166534":"#dbeafe;color:#1e40af")+'">'+(b.statut||"émis")+'</span></td></tr>';
+        }).join("")+'</tbody></table>'
+      : '<div style="text-align:center;color:#9ca3af;padding:14px 0">Aucun bon de livraison pour le moment.</div>';
+  } else {
+    var c=d.client||{}, av=d.avoirs||[], ct=d.contrat;
+    var totAv=av.reduce(function(s,a){return s+Number(a.montant||0);},0);
+    box.innerHTML=
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px">'
+      +'<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px"><div style="font-size:11px;color:#64748b;font-weight:700">CRÉDIT AUTORISÉ</div><div style="font-size:16px;font-weight:800">'+(c.creditAutorise?"✅ Oui":"❌ Non")+'</div></div>'
+      +'<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px"><div style="font-size:11px;color:#64748b;font-weight:700">PLAFOND</div><div style="font-size:16px;font-weight:800">'+proMoney(c.plafondCredit)+'</div></div>'
+      +'<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px"><div style="font-size:11px;color:#b91c1c;font-weight:700">SOLDE CRÉDIT</div><div style="font-size:16px;font-weight:800;color:#7f1d1d">'+proMoney(c.creditSolde)+'</div></div>'
+      +'<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px"><div style="font-size:11px;color:#15803d;font-weight:700">AVOIRS</div><div style="font-size:16px;font-weight:800;color:#14532d">'+proMoney(totAv)+'</div></div>'
+      +'</div>'
+      +(ct?'<div style="font-size:12px;color:#475569;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-bottom:10px">📑 Contrat actif'+(ct.remisePct?' · remise '+ct.remisePct+'%':'')+'</div>':'')
+      +(av.length
+        ? '<table class="pro-table"><thead><tr><th>Avoir / Date</th><th>Motif</th><th style="text-align:right">Montant</th></tr></thead><tbody>'
+          +av.map(function(a){return '<tr><td><strong>'+(a.numero||String(a.id||"").slice(0,10))+'</strong><br><span style="color:#9ca3af;font-size:11px">'+(a.date||"")+'</span></td><td style="font-size:12px">'+(a.motif||"—")+'</td><td style="text-align:right;font-weight:800;color:#15803d">'+proMoney(a.montant)+'</td></tr>';}).join("")
+          +'</tbody></table>'
+        : '<div style="text-align:center;color:#9ca3af;padding:10px 0">Aucun avoir.</div>');
+  }
+}
+window.proTab=proTab; window.loadProPortal=loadProPortal;
+
 function logout(){
   clearSession();
   document.getElementById("mon-espace").classList.remove("visible");
@@ -4852,7 +5082,7 @@ function openOrderCheck(){
   var items=Object.values(cart);
   var sub=items.reduce(function(s,p){return s+p.p*p.qty;},0);
   var df=delMode==="exp"?CFG.exp:(sub>=CFG.free?0:CFG.std), tot=sub+df;
-  var zone=(document.getElementById("f-zone")||{}).value||"";
+  var zone=(typeof getZoneValue==="function"?getZoneValue():((document.getElementById("f-zone")||{}).value||""));
   var pay=(document.getElementById("f-pay")||{}).value||"Espèces";
   var co=(document.getElementById("f-co")||{}).value||"";
   // Infos client
@@ -4964,6 +5194,18 @@ function getVilleValue(){
   return sel ? sel.value : (inp?inp.value.trim():"");
 }
 window.onVilleChange=onVilleChange; window.getVilleValue=getVilleValue;
+function onZoneChange(){
+  var sel=document.getElementById("f-zone"), inp=document.getElementById("f-zone-autre");
+  if(!sel||!inp) return;
+  if(sel.value==="autre"){ inp.style.display="block"; inp.focus(); }
+  else { inp.style.display="none"; inp.value=""; sel.removeAttribute("data-autre"); }
+}
+function getZoneValue(){
+  var sel=document.getElementById("f-zone"), inp=document.getElementById("f-zone-autre");
+  if(sel && sel.value==="autre") return (inp&&inp.value.trim())||"Autre quartier";
+  return sel ? sel.value : "";
+}
+window.onZoneChange=onZoneChange; window.getZoneValue=getZoneValue;
 
 // ── FORMULAIRE PRO ──
 async function submitProForm(e){
