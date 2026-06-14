@@ -1323,7 +1323,7 @@ const TEXTS = {
   },
 };
 
-let currentLang = localStorage.getItem("fl_lang") || "fr";
+let currentLang = localStorage.getItem("fl_lang") || "ar";  // défaut : Darija
 function t(k){ return TEXTS[currentLang]?.[k] ?? TEXTS.fr[k] ?? k }
 function setLang(lang){
   if(!TEXTS[lang]) return;
@@ -1343,6 +1343,33 @@ function setLang(lang){
   if(window.renderZones) window.renderZones(); if(window.renderStats) window.renderStats(); if(window.renderProducts) window.renderProducts(window.activeCategory||"all");
   if(window.renderStorageTabs) window.renderStorageTabs(); if(window.renderStorageCard) window.renderStorageCard(); if(window.renderRecipe) window.renderRecipe(); if(window.renderRecipeNav) window.renderRecipeNav();
 }
+
+// ── Popup choix de langue au 1er passage (aucune langue enregistrée) ──
+function pickLang(lang){
+  setLang(lang);
+  localStorage.setItem("fl_lang_picked","1");   // choix explicite enregistré
+  var ov=document.getElementById("lang-picker-overlay");
+  if(ov) ov.remove();
+}
+function maybeShowLangPicker(){
+  if(localStorage.getItem("fl_lang_picked")) return;  // langue déjà choisie explicitement
+  var ov=document.createElement("div");
+  ov.id="lang-picker-overlay";
+  ov.setAttribute("style","position:fixed;inset:0;z-index:5000;background:rgba(15,30,20,.78);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px");
+  ov.innerHTML=''
+    +'<div style="background:#fff;border-radius:22px;max-width:380px;width:100%;padding:30px 26px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35)">'
+    +'<div style="font-size:42px;margin-bottom:8px">🥬</div>'
+    +'<div style="font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#16a34a;font-weight:800;margin-bottom:4px">Vita Fresh</div>'
+    +'<h3 style="font-size:20px;font-weight:800;color:#14532d;margin:0 0 4px">اختر لغتك · Choisis ta langue</h3>'
+    +'<p style="font-size:13px;color:#6b7280;margin:0 0 20px">Choose your language</p>'
+    +'<div style="display:flex;flex-direction:column;gap:10px">'
+    +'<button onclick="pickLang(\'ar\')" style="padding:14px;border-radius:14px;border:2px solid #16a34a;background:#16a34a;color:#fff;font-size:16px;font-weight:800;cursor:pointer">🇲🇦 الدارجة (Darija)</button>'
+    +'<button onclick="pickLang(\'fr\')" style="padding:14px;border-radius:14px;border:1.5px solid #d1fae5;background:#fff;color:#14532d;font-size:15px;font-weight:700;cursor:pointer">🇫🇷 Français</button>'
+    +'<button onclick="pickLang(\'en\')" style="padding:14px;border-radius:14px;border:1.5px solid #d1fae5;background:#fff;color:#14532d;font-size:15px;font-weight:700;cursor:pointer">🇬🇧 English</button>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+}
+window.pickLang=pickLang; window.maybeShowLangPicker=maybeShowLangPicker;
 </script>
 
 <!-- CONFIG FAB -->
@@ -5914,6 +5941,7 @@ document.addEventListener("DOMContentLoaded",function(){
   applyMaintenanceMode();
   updateContactLinks(); renderStats(); renderZones();
   setLang(currentLang);
+  maybeShowLangPicker();
   showSkeletons(8);
   loadGalleryState(); renderGallery();
   loadNewsState(); renderNews();
