@@ -6998,5 +6998,45 @@ window.activeCategory=activeCategory;
 }
 </script>
 
+<!-- ── Compteur analytics Vita Fresh (visites / clics / régions) ──────────── -->
+<script>
+(function(){
+  var API = '/api/ext';
+  function track(type, label){
+    try {
+      fetch(API + '/track', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true,
+        body: JSON.stringify({ type: type, page: (location.hash || 'accueil').replace('#',''), label: label || '' })
+      }).catch(function(){});
+    } catch(e){}
+  }
+  // Pageview au chargement
+  track('view');
+  // Changement de section (hash) = nouvelle vue
+  window.addEventListener('hashchange', function(){ track('view'); });
+  // Clics sur liens / boutons (libellé court)
+  document.addEventListener('click', function(e){
+    var el = e.target && e.target.closest ? e.target.closest('[data-track], a, button') : null;
+    if (!el) return;
+    var label = el.getAttribute('data-track') || (el.textContent || '').trim().slice(0, 40);
+    if (label) track('click', label);
+  }, true);
+  // Widget compteur public (affiché selon la config choisie dans le back-office)
+  fetch(API + '/shop-stats?days=7').then(function(r){ return r.json(); }).then(function(d){
+    if (!d || !d.ok || !d.config || !d.config.afficher) return;
+    var c = d.config, parts = [];
+    if (c.showVisits) parts.push('👁️ ' + (d.total.visits || 0) + ' visites');
+    if (c.showClicks) parts.push('🖱️ ' + (d.total.clicks || 0) + ' clics');
+    if (c.showRegions && d.regions && d.regions[0]) parts.push('📍 ' + d.regions[0].label);
+    if (!parts.length) return;
+    var box = document.createElement('div');
+    box.setAttribute('aria-hidden','true');
+    box.style.cssText = 'position:fixed;bottom:12px;left:12px;z-index:9990;background:rgba(26,79,42,.92);color:#fff;font:600 12px/1 Arial,sans-serif;padding:9px 13px;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.22)';
+    box.innerHTML = '<span style="opacity:.8">' + (c.titre || 'Visiteurs') + ' :</span> ' + parts.join(' · ');
+    document.body.appendChild(box);
+  }).catch(function(){});
+})();
+</script>
+
 </body>
 </html>
