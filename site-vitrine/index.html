@@ -2166,6 +2166,13 @@ GET  /api/ext/commandes/:id → suivi commande</div>
           <div class="ibox"><span style="font-size:17px">ℹ️</span><div class="ibox-t" id="del-info">Livraison standard — gratuite dès 150 MAD.</div></div>
           <div class="tr"><span>Sous-total</span><span id="t-sub">0 MAD</span></div>
           <div class="tr"><span>Livraison</span><span id="t-del">Gratuite</span></div>
+          <!-- ── Code promo (géré dans le back-office ERP → Codes Promo) ── -->
+          <div class="tr" style="gap:8px;align-items:center">
+            <input id="promo-input" type="text" placeholder="Code promo" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')applyPromo()" style="flex:1;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;text-transform:uppercase;letter-spacing:.5px">
+            <button type="button" onclick="applyPromo()" style="padding:8px 14px;border:none;border-radius:8px;background:#1a4f2a;color:#fff;font-weight:700;font-size:12px;cursor:pointer">Appliquer</button>
+          </div>
+          <div id="promo-msg" style="font-size:11px;font-weight:600;min-height:14px;margin:-2px 0 2px"></div>
+          <div class="tr" id="promo-discount" style="display:none;color:#16a34a;font-weight:700"><span id="promo-label">Remise</span><span id="t-remise">−0 MAD</span></div>
           <div class="tf2"><div class="tl2">Total</div><div class="ta" id="t-tot">0 MAD</div></div>
           <div class="erp-note"><strong>🔗 Synchronisé avec FreshLink ERP</strong>Commande enregistrée — bon de livraison — notification WhatsApp</div>
           <button class="cbtn" onclick="openOrderCheck()">🔍 Vérifier ma commande — <span id="t-conf">0 MAD</span></button>
@@ -3983,13 +3990,35 @@ function upCart(id,d){
   }
   updateCartUI(); showToast(parseInt(d)>0?"🛒 Ajouté au panier !":"🗑️ Retiré du panier");
 }
+var PROMO=null;   // code promo appliqué : { valid, code, type, valeur, label, minCommande }
+function applyPromo(){
+  var inp=document.getElementById("promo-input"); var msg=document.getElementById("promo-msg");
+  var code=((inp&&inp.value)||"").trim().toUpperCase();
+  var sub=Object.values(cart).reduce(function(s,p){return s+p.p*p.qty;},0);
+  if(!code){ PROMO=null; if(msg)msg.textContent=""; updateCartUI(); return; }
+  if(msg){ msg.style.color="#6b7280"; msg.textContent="Vérification…"; }
+  fetch("/api/ext/promo?code="+encodeURIComponent(code)+"&total="+sub)
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d&&d.ok&&d.valid){ PROMO=d; if(msg){msg.style.color="#16a34a";msg.textContent="✅ Code appliqué"+(d.label?" — "+d.label:"");} }
+      else { PROMO=null; if(msg){msg.style.color="#dc2626";msg.textContent="❌ "+((d&&d.reason)||"Code invalide");} }
+      updateCartUI();
+    })
+    .catch(function(){ PROMO=null; if(msg){msg.style.color="#dc2626";msg.textContent="Erreur réseau";} updateCartUI(); });
+}
 function updateCartUI(){
   var items=Object.values(cart);
   var total=items.reduce(function(s,p){return s+p.qty;},0);
   var cartNEl=document.getElementById("cart-n"); if(cartNEl) cartNEl.textContent=total;
   var badge=document.getElementById("cart-badge"); if(badge){badge.textContent=total;badge.style.display=total?"flex":"none";}
   var sub=items.reduce(function(s,p){return s+p.p*p.qty;},0);
-  var df=delMode==="exp"?CFG.exp:(sub>=CFG.free?0:CFG.std), tot=sub+df;
+  var df=delMode==="exp"?CFG.exp:(sub>=CFG.free?0:CFG.std);
+  // Remise code promo (validé via /api/ext/promo, géré dans l'ERP)
+  var remise=0;
+  if(PROMO && PROMO.valid && !(PROMO.minCommande && sub < PROMO.minCommande)){
+    remise = PROMO.type==="montant" ? Math.min(PROMO.valeur, sub) : Math.round(sub*PROMO.valeur/100*100)/100;
+  }
+  var tot=Math.max(0, sub+df-remise);
   var fmt2=function(n){return (Number(n)||0).toFixed(2);};   // ✅ toujours 2 décimales
   var totBtn=document.getElementById("total-btn"); if(totBtn) totBtn.textContent=fmt2(tot)+" MAD";
   var ci=document.getElementById("cart-items"), ct=document.getElementById("cart-totals");
@@ -4004,6 +4033,12 @@ function updateCartUI(){
   document.getElementById("t-del").textContent=df===0?"Gratuite":"+"+fmt2(df)+" MAD";
   document.getElementById("t-tot").textContent=fmt2(tot)+" MAD";
   document.getElementById("t-conf").textContent=fmt2(tot)+" MAD";
+  // Ligne remise
+  var pd=document.getElementById("promo-discount");
+  if(pd){
+    if(remise>0){ pd.style.display="flex"; document.getElementById("t-remise").textContent="−"+fmt2(remise)+" MAD"; document.getElementById("promo-label").textContent=(PROMO.label||PROMO.code||"Remise"); }
+    else pd.style.display="none";
+  }
   document.getElementById("del-info").textContent=delMode==="exp"?"⚡ Express — livraison en "+CFG.expDelay+", supplément +"+CFG.exp+" MAD.":sub>=CFG.free?"🚛 Standard gratuite — commande ≥ "+CFG.free+" MAD.":"🚛 Standard — gratuite dès "+CFG.free+" MAD (actuellement +"+CFG.std+" MAD).";
 }
 
@@ -4101,7 +4136,12 @@ function submitOrder(){
   if(!Object.keys(cart).length){showToast("🛒 Panier vide — ajoutez des produits");return;}
   var btn=document.getElementById("submit-btn"); btn.disabled=true; btn.innerHTML="⏳ Envoi en cours... <span id='total-btn' style='display:none'>0</span>";
   var items=Object.values(cart), sub=items.reduce(function(s,p){return s+p.p*p.qty;},0);
-  var df=delMode==="exp"?CFG.exp:(sub>=CFG.free?0:CFG.std), tot=sub+df;
+  var df=delMode==="exp"?CFG.exp:(sub>=CFG.free?0:CFG.std);
+  var remise=0;
+  if(PROMO && PROMO.valid && !(PROMO.minCommande && sub < PROMO.minCommande)){
+    remise = PROMO.type==="montant" ? Math.min(PROMO.valeur, sub) : Math.round(sub*PROMO.valeur/100*100)/100;
+  }
+  var tot=Math.max(0, sub+df-remise);
   var co=(document.getElementById("f-co")||{}).value||"", email=document.getElementById("f-email").value||"";
   var zone=(typeof getZoneValue==="function"?getZoneValue():document.getElementById("f-zone").value), notes=document.getElementById("f-notes").value, pay=document.getElementById("f-pay").value;
   var preps=Array.from(document.querySelectorAll(".popt.on")).map(function(e){return e.textContent.trim();}).join(", ");
@@ -4193,6 +4233,8 @@ function submitOrder(){
     adresse_livraison:adr+(zone?" — "+zone:""),
     lignes:lignes,
     montant_total:tot,
+    codePromo:(PROMO&&PROMO.valid)?PROMO.code:null,
+    remisePromo:remise||0,
     creneau:delMode==="exp"?"Express "+CFG.expDelay:"Standard 24h",
     instructions:[preps?"Préparation: "+preps:"",hasSurCommande?"⏳ CONTIENT DES ARTICLES SUR COMMANDE (hors saison/rupture) — confirmer disponibilité avant livraison":"",notes].filter(Boolean).join(" | ")||null,
     statut:hasSurCommande?"a_confirmer":"nouveau",
@@ -5141,7 +5183,12 @@ function openOrderCheck(){
   if(!Object.keys(cart).length){showToast("🛒 Panier vide — ajoutez des produits");return;}
   var items=Object.values(cart);
   var sub=items.reduce(function(s,p){return s+p.p*p.qty;},0);
-  var df=delMode==="exp"?CFG.exp:(sub>=CFG.free?0:CFG.std), tot=sub+df;
+  var df=delMode==="exp"?CFG.exp:(sub>=CFG.free?0:CFG.std);
+  var remise=0;
+  if(PROMO && PROMO.valid && !(PROMO.minCommande && sub < PROMO.minCommande)){
+    remise = PROMO.type==="montant" ? Math.min(PROMO.valeur, sub) : Math.round(sub*PROMO.valeur/100*100)/100;
+  }
+  var tot=Math.max(0, sub+df-remise);
   var zone=(typeof getZoneValue==="function"?getZoneValue():((document.getElementById("f-zone")||{}).value||""));
   var pay=(document.getElementById("f-pay")||{}).value||"Espèces";
   var co=(document.getElementById("f-co")||{}).value||"";
@@ -5164,6 +5211,7 @@ function openOrderCheck(){
   document.getElementById("oc-totals").innerHTML=
     '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px"><span style="color:#6b7280">Sous-total ('+items.length+' article'+(items.length>1?"s":"")+')</span><span>'+sub.toFixed(2)+' MAD</span></div>'
     +'<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:12px"><span style="color:#6b7280">Livraison</span><span>'+(df===0?'<span style="color:#16a34a;font-weight:700">✅ Gratuite</span>':'+'+df+' MAD')+'</span></div>'
+    +(remise>0?'<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:12px;color:#16a34a;font-weight:700"><span>Code promo '+((PROMO&&PROMO.code)||"")+'</span><span>−'+remise.toFixed(2)+' MAD</span></div>':'')
     +'<div style="display:flex;justify-content:space-between;font-size:18px;font-weight:800;color:#1e5631;border-top:2px solid #e5e7eb;padding-top:12px"><span>Total</span><span>'+tot.toFixed(2)+' MAD</span></div>';
   document.getElementById("order-check-modal").style.display="flex";
 }
