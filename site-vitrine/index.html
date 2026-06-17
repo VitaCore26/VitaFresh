@@ -1515,7 +1515,9 @@ window.pickLang=pickLang; window.maybeShowLangPicker=maybeShowLangPicker;
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button onclick="addNewsItem()" style="padding:9px 16px;border-radius:8px;background:var(--g1);color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:700">➕ Ajouter une actualité</button>
         <button onclick="addNewsPub()" style="padding:9px 16px;border-radius:8px;background:#b8960c;color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:700">🖼️ Ajouter une pub (image)</button>
+        <button onclick="publishNews()" style="padding:9px 16px;border-radius:8px;background:#1d4ed8;color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:700">📢 Publier sur le site</button>
       </div>
+      <div style="font-size:11px;color:var(--gy);margin-top:6px">Modifiez ci-dessous puis cliquez « Publier sur le site » (mot de passe admin requis) — les actualités deviennent visibles par tous les visiteurs.</div>
     </div>
     <!-- ── GESTION COMPTES UTILISATEURS ── -->
     <div class="cfg-sec" id="s-users">
@@ -5390,13 +5392,34 @@ var NEWS_FALLBACK = [
   { badge:"Équipe", date:"En continu", title:"Nous recrutons des livreurs", text:"Vita Fresh agrandit son équipe logistique à Casablanca. Contactez-nous via WhatsApp pour postuler.", img:"" }
 ];
 function loadNewsState(){
+  // 1) Affichage immédiat depuis le cache local
   try{
     var saved=JSON.parse(localStorage.getItem("vf_news")||"null");
     NEWS_ITEMS=(saved&&Array.isArray(saved.items))?saved.items:[];
   }catch(_){ NEWS_ITEMS=[]; }
+  // 2) Version PUBLIÉE (Supabase via l'ERP) — source de vérité partagée
+  fetch("/api/ext/news").then(function(r){return r.json();}).then(function(d){
+    if(d&&d.ok&&Array.isArray(d.items)){
+      NEWS_ITEMS=d.items;
+      try{ localStorage.setItem("vf_news",JSON.stringify({items:NEWS_ITEMS})); }catch(_){}
+      renderNews(); if(typeof renderNewsAdmin==="function") renderNewsAdmin();
+    }
+  }).catch(function(){});
 }
 function saveNewsState(){
+  // Brouillon local — la mise en ligne se fait via « Publier » (publishNews)
   try{ localStorage.setItem("vf_news",JSON.stringify({items:NEWS_ITEMS})); }catch(_){}
+}
+function publishNews(){
+  var pwd=sessionStorage.getItem("vf_admin_pwd")||"";
+  if(!pwd){ pwd=window.prompt("Mot de passe admin pour PUBLIER les actualités sur le site :","")||""; if(!pwd) return; }
+  fetch("/api/ext/news",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({items:NEWS_ITEMS,password:pwd})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d&&d.ok){ sessionStorage.setItem("vf_admin_pwd",pwd); alert("✅ Actualités publiées sur le site ("+(d.count||0)+")."); }
+      else { sessionStorage.removeItem("vf_admin_pwd"); alert("❌ "+((d&&d.error)||"Échec de la publication")); }
+    })
+    .catch(function(){ alert("Erreur réseau lors de la publication."); });
 }
 function escapeHtml(s){ return String(s||"").replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
 function renderNews(){
@@ -6432,7 +6455,7 @@ window.showStorageItem=showStorageItem; window.switchRecipe=switchRecipe;
 window.renderStorageTabs=renderStorageTabs; window.renderStorageCard=renderStorageCard; window.renderRecipe=renderRecipe; window.renderRecipeNav=renderRecipeNav;
 window.filterAvis=filterAvis; window.setStars=setStars; window.submitReview=submitReview;
 window.toggleGallerySection=toggleGallerySection; window.addGalleryItem=addGalleryItem; window.removeGalleryItem=removeGalleryItem; window.closeLightbox=closeLightbox;
-window.addNewsItem=addNewsItem; window.addNewsPub=addNewsPub; window.removeNewsItem=removeNewsItem; window.NEWS_ITEMS=NEWS_ITEMS; window.saveNewsState=saveNewsState; window.renderNews=renderNews; window.renderNewsAdmin=renderNewsAdmin;
+window.addNewsItem=addNewsItem; window.addNewsPub=addNewsPub; window.removeNewsItem=removeNewsItem; window.NEWS_ITEMS=NEWS_ITEMS; window.saveNewsState=saveNewsState; window.renderNews=renderNews; window.renderNewsAdmin=renderNewsAdmin; window.publishNews=publishNews;
 window.footerSecretClick=footerSecretClick; window.checkAdminPin=checkAdminPin;
 window.openLegal=openLegal; window.closeLegal=closeLegal;
 window.toggleChat=toggleChat; window.chatAction=chatAction; window.chatSend=chatSend;
