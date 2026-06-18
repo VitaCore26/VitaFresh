@@ -2169,11 +2169,14 @@ GET  /api/ext/commandes/:id → suivi commande</div>
           <div class="tr"><span>Sous-total</span><span id="t-sub">0 MAD</span></div>
           <div class="tr"><span>Livraison</span><span id="t-del">Gratuite</span></div>
           <!-- ── Code promo (géré dans le back-office ERP → Codes Promo) ── -->
-          <div class="tr" style="gap:8px;align-items:center">
-            <input id="promo-input" type="text" placeholder="Code promo" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')applyPromo()" style="flex:1;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;text-transform:uppercase;letter-spacing:.5px">
-            <button type="button" onclick="applyPromo()" style="padding:8px 14px;border:none;border-radius:8px;background:#1a4f2a;color:#fff;font-weight:700;font-size:12px;cursor:pointer">Appliquer</button>
+          <div style="margin:8px 0;padding:10px 12px;border:1.5px dashed #1a4f2a;border-radius:12px;background:#f0fdf4">
+            <div style="font-size:12px;font-weight:800;color:#1a4f2a;margin-bottom:6px;display:flex;align-items:center;gap:6px">🎟️ Vous avez un code promo&nbsp;?</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input id="promo-input" type="text" placeholder="Saisir le code promo" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')applyPromo()" style="flex:1;padding:9px 11px;border:1px solid #86c69b;border-radius:8px;font-size:13px;text-transform:uppercase;letter-spacing:.5px;background:#fff">
+              <button type="button" onclick="applyPromo()" style="padding:9px 16px;border:none;border-radius:8px;background:#1a4f2a;color:#fff;font-weight:700;font-size:12px;cursor:pointer">Appliquer</button>
+            </div>
+            <div id="promo-msg" style="font-size:11px;font-weight:600;min-height:14px;margin-top:5px"></div>
           </div>
-          <div id="promo-msg" style="font-size:11px;font-weight:600;min-height:14px;margin:-2px 0 2px"></div>
           <div class="tr" id="promo-discount" style="display:none;color:#16a34a;font-weight:700"><span id="promo-label">Remise</span><span id="t-remise">−0 MAD</span></div>
           <div class="tf2"><div class="tl2">Total</div><div class="ta" id="t-tot">0 MAD</div></div>
           <div class="erp-note"><strong>🔗 Synchronisé avec FreshLink ERP</strong>Commande enregistrée — bon de livraison — notification WhatsApp</div>
@@ -7073,16 +7076,31 @@ window.activeCategory=activeCategory;
 <script>
 (function(){
   var API = '/api/ext';
-  function track(type, label){
+  function track(type, label, gps){
     try {
+      var body = { type: type, page: (location.hash || 'accueil').replace('#',''), label: label || '' };
+      if (gps && typeof gps.lat === 'number' && typeof gps.lng === 'number') {
+        body.lat = gps.lat; body.lng = gps.lng; if (typeof gps.acc === 'number') body.acc = gps.acc;
+      }
       fetch(API + '/track', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true,
-        body: JSON.stringify({ type: type, page: (location.hash || 'accueil').replace('#',''), label: label || '' })
+        body: JSON.stringify(body)
       }).catch(function(){});
     } catch(e){}
   }
   // Pageview au chargement
   track('view');
+  // Point GPS EXACT — best-effort, uniquement si le visiteur autorise la géolocalisation
+  // (le navigateur affiche sa propre demande de consentement ; sinon on garde le pays/ville via IP)
+  try {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        function(pos){ track('point', '', { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy }); },
+        function(){ /* refusé / indisponible — on garde la géoloc IP */ },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 600000 }
+      );
+    }
+  } catch(e){}
   // Changement de section (hash) = nouvelle vue
   window.addEventListener('hashchange', function(){ track('view'); });
   // Clics sur liens / boutons (libellé court)
