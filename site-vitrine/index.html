@@ -1081,7 +1081,7 @@ const TEXTS = {
     ft_wa_title:"WhatsApp", ft_links_title:"Liens rapides",
     strip_1:"Standard & express", strip_2:"Épluchés & lavés", strip_3:"Prêts à cuisiner",
     strip_4:"Pro & Marchands", strip_5:"Sync temps réel FreshLink", strip_6:"Fraîcheur garantie", strip_7:"Casablanca, Maroc",
-    cat_all:"Tous", cat_fresh:"🌿 Frais", cat_peeled:"🔪 Épluché", cat_washed:"💧 Lavé", cat_promo:"🔥 Promo",
+    cat_all:"Tous", cat_fresh:"🌿 Frais", cat_peeled:"🔪 Épluché", cat_washed:"💧 Lavé", cat_cut:"🔪 Coupé", cat_promo:"🔥 Promo",
     avis_tab_all:"Tous", avis_tab_client:"Clients", avis_tab_fourn:"Fournisseurs",
     search_ph:"Rechercher un produit...",
     sort_def:"Tri par défaut", sort_asc:"Prix ↑ croissant", sort_desc:"Prix ↓ décroissant", sort_az:"Nom A→Z", sort_dispo:"Disponibilité",
@@ -1188,7 +1188,7 @@ const TEXTS = {
     ft_wa_title:"واتساب", ft_links_title:"لينكات سريعة",
     strip_1:"عادي وسريع", strip_2:"مقشّر ومغسول", strip_3:"جاهز للطبخ",
     strip_4:"مهنيين وتجار", strip_5:"مزامن FreshLink", strip_6:"طازة مضمونة", strip_7:"الدار البيضاء",
-    cat_all:"الكل", cat_fresh:"🌿 طازة", cat_peeled:"🔪 مقشّر", cat_washed:"💧 مغسول", cat_promo:"🔥 عروض",
+    cat_all:"الكل", cat_fresh:"🌿 طازة", cat_peeled:"🔪 مقشّر", cat_washed:"💧 مغسول", cat_cut:"🔪 مقطّع", cat_promo:"🔥 عروض",
     avis_tab_all:"الكل", avis_tab_client:"الزبائن", avis_tab_fourn:"المورّدين",
     search_ph:"قلّب على منتج...",
     sort_def:"ترتيب افتراضي", sort_asc:"الثمن ↑ من الأرخص", sort_desc:"الثمن ↓ من الأغلى", sort_az:"الاسم أ→ي", sort_dispo:"التوفر",
@@ -1295,7 +1295,7 @@ const TEXTS = {
     ft_wa_title:"WhatsApp", ft_links_title:"Quick links",
     strip_1:"Standard & express", strip_2:"Peeled & washed", strip_3:"Ready to cook",
     strip_4:"Pro & Merchants", strip_5:"FreshLink real-time sync", strip_6:"Guaranteed freshness", strip_7:"Casablanca, Morocco",
-    cat_all:"All", cat_fresh:"🌿 Fresh", cat_peeled:"🔪 Peeled", cat_washed:"💧 Washed", cat_promo:"🔥 Promo",
+    cat_all:"All", cat_fresh:"🌿 Fresh", cat_peeled:"🔪 Peeled", cat_washed:"💧 Washed", cat_cut:"🔪 Cut", cat_promo:"🔥 Promo",
     avis_tab_all:"All", avis_tab_client:"Clients", avis_tab_fourn:"Suppliers",
     search_ph:"Search a product...",
     sort_def:"Default order", sort_asc:"Price ↑ low to high", sort_desc:"Price ↓ high to low", sort_az:"Name A→Z", sort_dispo:"Availability",
@@ -1994,6 +1994,7 @@ GET  /api/ext/commandes/:id → suivi commande</div>
       <button class="fb" onclick="filt(this,'frais')" data-i18n="cat_fresh">🌿 Frais</button>
       <button class="fb" onclick="filt(this,'epluche')" data-i18n="cat_peeled">🔪 Épluché</button>
       <button class="fb" onclick="filt(this,'lave')" data-i18n="cat_washed">💧 Lavé</button>
+      <button class="fb" onclick="filt(this,'coupe')" data-i18n="cat_cut">🔪 Coupé</button>
       <button class="fb" onclick="filt(this,'promo')" data-i18n="cat_promo">🔥 Promo</button>
     </div>
     <div class="pgrid" id="pgrid"></div>
@@ -3889,6 +3890,7 @@ function renderProds(f){
   }
   else if(filter==="coupe"){
     list=PRODS.filter(function(p){return p.tags&&(p.tags.indexOf("coupe")>=0||p.tags.indexOf("coupé")>=0);});
+    onDemandMode = "coupe";
   }
   else if(filter==="pret_cuisson"){
     list=PRODS.filter(function(p){return p.tags&&p.tags.indexOf("pret_cuisson")>=0;});
@@ -3947,8 +3949,8 @@ function renderProds(f){
     var demandBadgeHtml = "";
     var demandNoteHtml = "";
     if(onDemandMode){
-      var emoji = onDemandMode==="epluche" ? "🔪" : "💧";
-      var titre = onDemandMode==="epluche" ? "Épluché" : "Lavé";
+      var emoji = onDemandMode==="epluche" ? "🔪" : onDemandMode==="coupe" ? "🔪" : "💧";
+      var titre = onDemandMode==="epluche" ? "Épluché" : onDemandMode==="coupe" ? "Coupé" : "Lavé";
       // Badge subtil en haut à droite : pastille blanche/transparente, bord fin
       demandBadgeHtml='<span style="position:absolute;top:9px;right:9px;background:rgba(255,255,255,.95);color:#0f172a;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;backdrop-filter:blur(8px);box-shadow:0 2px 8px rgba(0,0,0,.08);border:1px solid rgba(15,23,42,.06);z-index:2;display:inline-flex;align-items:center;gap:5px">'+emoji+' '+titre+' sur demande</span>';
       // Note inline minimaliste : ligne fine, couleur slate
@@ -3961,7 +3963,14 @@ function renderProds(f){
     var PREP_LABELS={epluche:"🔪 Épluché",lave:"💧 Lavé",coupe:"🔪 Coupé",pret_cuisson:"🍳 Prêt cuisson",emballe:"📦 Emballé"};
     var prepTags=(p.tags||[]).filter(function(t){return PREP_LABELS[t];});
     var prepBadgesHtml=prepTags.length?'<div style="display:flex;gap:4px;flex-wrap:wrap;margin:4px 0 6px">'+prepTags.map(function(t){return '<span style="display:inline-flex;align-items:center;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:8px;padding:2px 7px;font-size:9.5px;font-weight:700;letter-spacing:.1px">'+PREP_LABELS[t]+'</span>';}).join("")+'</div>':'';
-    return'<div class="pc"><div class="pc-img"><span>'+p.em+'</span>'+imgHtml+'<span class="pc-tag '+tagClass+'">'+tagLabel+'</span>'+outBadgeHtml+demandBadgeHtml+'</div><div class="pc-body"><div class="pc-n">'+p.n+'</div>'+arHtml+'<div class="pc-ori">📍 '+p.o+'</div>'+prepBadgesHtml+'<div class="pc-opts">'+tagsHtml+promoHtml+'</div>'+unitBadge+packHtml+demandNoteHtml+outNoteHtml+stockHtml+'<div class="pc-foot"><div class="pc-p">'+prixHtml+'</div><div class="qc"><button class="qb" onclick="upCart(\''+p.id+'\',-1)">−</button><span class="qv" id="q'+p.id+'">'+qty+'</span><button class="qb" onclick="upCart(\''+p.id+'\',1)"'+(outStock?' title="Sur commande — confirmation équipe"':'')+(onDemandMode?' title="'+( onDemandMode==="epluche"?"Épluché":"Lavé")+' sur demande"':'')+'>+</button></div></div></div></div>';
+    // Rupture : NON commandable en flux normal — commandable UNIQUEMENT en mode transformation (épluché/lavé/coupé)
+    var qcHtml;
+    if(outStock && !onDemandMode){
+      qcHtml='<div style="font-size:11px;font-weight:800;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:6px 12px">⛔ Rupture — dispo en épluché/lavé/coupé</div>';
+    } else {
+      qcHtml='<div class="qc"><button class="qb" onclick="upCart(\''+p.id+'\',-1)">−</button><span class="qv" id="q'+p.id+'">'+qty+'</span><button class="qb" onclick="upCart(\''+p.id+'\',1)"'+(onDemandMode?' title="'+(onDemandMode==="epluche"?"Épluché":onDemandMode==="coupe"?"Coupé":"Lavé")+' sur demande"':'')+'>+</button></div>';
+    }
+    return'<div class="pc"><div class="pc-img"><span>'+p.em+'</span>'+imgHtml+'<span class="pc-tag '+tagClass+'">'+tagLabel+'</span>'+outBadgeHtml+demandBadgeHtml+'</div><div class="pc-body"><div class="pc-n">'+p.n+'</div>'+arHtml+'<div class="pc-ori">📍 '+p.o+'</div>'+prepBadgesHtml+'<div class="pc-opts">'+tagsHtml+promoHtml+'</div>'+unitBadge+packHtml+demandNoteHtml+outNoteHtml+stockHtml+'<div class="pc-foot"><div class="pc-p">'+prixHtml+'</div>'+qcHtml+'</div></div></div>';
   }).join("");
 }
 
@@ -3984,7 +3993,8 @@ function updateCatCounts(){
 // ══════════════════════════════════════════════════════════════════
 function upCart(id,d){
   var p=PRODS.find(function(x){return x.id===id||x.id===parseInt(id);});
-  if(!p||!p.dispo) return;
+  // Rupture commandable UNIQUEMENT en mode transformation (épluché/lavé/coupé)
+  if(!p || (!p.dispo && !onDemandMode)) return;
   if(!cart[id]) cart[id]=Object.assign({},p,{qty:0});
   cart[id].qty=Math.max(0,cart[id].qty+parseInt(d));
   if(!cart[id].qty) delete cart[id];
@@ -4019,9 +4029,12 @@ function updateCartUI(){
   var sub=items.reduce(function(s,p){return s+p.p*p.qty;},0);
   var df=delMode==="exp"?CFG.exp:(sub>=CFG.free?0:CFG.std);
   // Remise code promo (validé via /api/ext/promo, géré dans l'ERP)
+  // Types : pourcentage, montant, livraison_gratuite (df=0), article_gratuit (remise=valeur)
   var remise=0;
   if(PROMO && PROMO.valid && !(PROMO.minCommande && sub < PROMO.minCommande)){
-    remise = PROMO.type==="montant" ? Math.min(PROMO.valeur, sub) : Math.round(sub*PROMO.valeur/100*100)/100;
+    if(PROMO.type==="livraison_gratuite" || PROMO.livraisonGratuite){ df=0; }
+    else if(PROMO.type==="pourcentage"){ remise = Math.round(sub*PROMO.valeur/100*100)/100; }
+    else { remise = Math.min(PROMO.valeur, sub); } // montant + article_gratuit
   }
   var tot=Math.max(0, sub+df-remise);
   var fmt2=function(n){return (Number(n)||0).toFixed(2);};   // ✅ toujours 2 décimales
@@ -4144,7 +4157,9 @@ function submitOrder(){
   var df=delMode==="exp"?CFG.exp:(sub>=CFG.free?0:CFG.std);
   var remise=0;
   if(PROMO && PROMO.valid && !(PROMO.minCommande && sub < PROMO.minCommande)){
-    remise = PROMO.type==="montant" ? Math.min(PROMO.valeur, sub) : Math.round(sub*PROMO.valeur/100*100)/100;
+    if(PROMO.type==="livraison_gratuite" || PROMO.livraisonGratuite){ df=0; }
+    else if(PROMO.type==="pourcentage"){ remise = Math.round(sub*PROMO.valeur/100*100)/100; }
+    else { remise = Math.min(PROMO.valeur, sub); }
   }
   var tot=Math.max(0, sub+df-remise);
   var co=(document.getElementById("f-co")||{}).value||"", email=document.getElementById("f-email").value||"";
@@ -7134,9 +7149,9 @@ window.activeCategory=activeCategory;
       if (!d || !d.ok || !d.config || !d.config.afficher) return;
       var c = d.config, parts = [];
       // Nombre de visiteurs ACTUELS (en ligne) — en tête
-      if (typeof d.online === 'number') parts.push('🟢 ' + d.online + ' en ligne');
       if (c.showVisits) parts.push('👁️ ' + (d.total.visits || 0) + ' visites');
       if (c.showClicks) parts.push('🖱️ ' + (d.total.clicks || 0) + ' clics');
+      if (typeof d.online === 'number') parts.push('🟢 ' + d.online + ' en ligne actuellement');
       if (c.showRegions && d.regions && d.regions[0]) parts.push('📍 ' + d.regions[0].label);
       if (!parts.length) return;
       var box = document.getElementById('vf-counter');
