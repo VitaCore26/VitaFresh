@@ -3963,13 +3963,9 @@ function renderProds(f){
     var PREP_LABELS={epluche:"🔪 Épluché",lave:"💧 Lavé",coupe:"🔪 Coupé",pret_cuisson:"🍳 Prêt cuisson",emballe:"📦 Emballé"};
     var prepTags=(p.tags||[]).filter(function(t){return PREP_LABELS[t];});
     var prepBadgesHtml=prepTags.length?'<div style="display:flex;gap:4px;flex-wrap:wrap;margin:4px 0 6px">'+prepTags.map(function(t){return '<span style="display:inline-flex;align-items:center;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:8px;padding:2px 7px;font-size:9.5px;font-weight:700;letter-spacing:.1px">'+PREP_LABELS[t]+'</span>';}).join("")+'</div>':'';
-    // Rupture : NON commandable en flux normal — commandable UNIQUEMENT en mode transformation (épluché/lavé/coupé)
-    var qcHtml;
-    if(outStock && !onDemandMode){
-      qcHtml='<div style="font-size:11px;font-weight:800;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:6px 12px">⛔ Rupture — dispo en épluché/lavé/coupé</div>';
-    } else {
-      qcHtml='<div class="qc"><button class="qb" onclick="upCart(\''+p.id+'\',-1)">−</button><span class="qv" id="q'+p.id+'">'+qty+'</span><button class="qb" onclick="upCart(\''+p.id+'\',1)"'+(onDemandMode?' title="'+(onDemandMode==="epluche"?"Épluché":onDemandMode==="coupe"?"Coupé":"Lavé")+' sur demande"':'')+'>+</button></div>';
-    }
+    // Tous les articles RESTENT commandables (frais, épluché, lavé, coupé) — même en
+    // rupture (« sur commande »). Petit tag d'angle « Sur commande » via outBadgeHtml.
+    var qcHtml='<div class="qc"><button class="qb" onclick="upCart(\''+p.id+'\',-1)">−</button><span class="qv" id="q'+p.id+'">'+qty+'</span><button class="qb" onclick="upCart(\''+p.id+'\',1)"'+(outStock?' title="Sur commande — confirmé par l\'équipe"':'')+(onDemandMode?' title="'+(onDemandMode==="epluche"?"Épluché":onDemandMode==="coupe"?"Coupé":"Lavé")+' sur demande"':'')+'>+</button></div>';
     return'<div class="pc"><div class="pc-img"><span>'+p.em+'</span>'+imgHtml+'<span class="pc-tag '+tagClass+'">'+tagLabel+'</span>'+outBadgeHtml+demandBadgeHtml+'</div><div class="pc-body"><div class="pc-n">'+p.n+'</div>'+arHtml+'<div class="pc-ori">📍 '+p.o+'</div>'+prepBadgesHtml+'<div class="pc-opts">'+tagsHtml+promoHtml+'</div>'+unitBadge+packHtml+demandNoteHtml+outNoteHtml+stockHtml+'<div class="pc-foot"><div class="pc-p">'+prixHtml+'</div>'+qcHtml+'</div></div></div>';
   }).join("");
 }
@@ -3993,8 +3989,8 @@ function updateCatCounts(){
 // ══════════════════════════════════════════════════════════════════
 function upCart(id,d){
   var p=PRODS.find(function(x){return x.id===id||x.id===parseInt(id);});
-  // Rupture commandable UNIQUEMENT en mode transformation (épluché/lavé/coupé)
-  if(!p || (!p.dispo && !onDemandMode)) return;
+  // Tous les articles sont commandables, même en rupture (« sur commande »)
+  if(!p) return;
   if(!cart[id]) cart[id]=Object.assign({},p,{qty:0});
   cart[id].qty=Math.max(0,cart[id].qty+parseInt(d));
   if(!cart[id].qty) delete cart[id];
