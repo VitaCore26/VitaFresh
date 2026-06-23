@@ -3637,6 +3637,35 @@ function mapERPArticle(row){
   var packInfo=row.conditionnement||row.pack_info||row.packInfo||null;
   return{id:row.id,em:getEmoji(row.nom,cat),n:row.nom||"",no:nomAr,o:origin,p:prix,prixBase:prixBase,u:row.unite||"kg",packInfo:packInfo,cat:cat,tags:tags,t:firstTag,dispo:dispo,stock:stock,img:row.photo||"",promo:!!promoObj,promoLabel:promoLabel,fromERP:true};
 }
+// Repli TEMPORAIRE (tant que sql/SECURE-fl_articles-public-view.sql n'est pas
+// exécuté) : mappe une ligne brute fl_articles {id,payload} vers le format
+// PROD, en ne retenant QUE les champs catalogue — jamais prixAchat/stock réel,
+// même si la requête réseau sous-jacente lit encore le payload complet.
+function mapSBArticleFallback(row){
+  var p=row.payload||{};
+  var prixBase=parseFloat(p.marketplacePrixPublic||0);
+  if(!prixBase && p.prixAchat){
+    var pa=parseFloat(p.prixAchat||0), pv=parseFloat(p.pvValeur||0);
+    if(p.pvMethode==="pourcentage") prixBase=Math.round(pa*(1+pv/100)*100)/100;
+    else if(p.pvMethode==="montant") prixBase=Math.round((pa+pv)*100)/100;
+    else prixBase=pv||pa;
+  }
+  if(!prixBase) prixBase=parseFloat(p.pvValeur||0)||0;
+  var promoObj=p.marketplacePromo&&p.marketplacePromo.actif?p.marketplacePromo:null;
+  var prix=promoObj&&promoObj.prixPromo?parseFloat(promoObj.prixPromo):prixBase;
+  var promoLabel=promoObj?(promoObj.etiquette||(prixBase&&promoObj.prixPromo?"-"+Math.round((1-promoObj.prixPromo/prixBase)*100)+"%":"Promo")):"";
+  var cat=mapFamille(p.famille, p.nom), tags=Array.isArray(p.marketplaceTags)?p.marketplaceTags:(Array.isArray(p.tags)?p.tags:[]), firstTag=tags[0]||"frais";
+  return{
+    id:row.id, em:getEmoji(p.nom,cat), n:p.nom||"", no:p.nomAr||"",
+    o:p.marketplaceDescription||p.marketplaceCommentaire||p.famille||"Maroc",
+    p:prix, prixBase:prixBase,
+    u:p.unite||"kg", packInfo:p.conditionnement||p.pack_info||p.packInfo||null, cat:cat, tags:tags, t:firstTag,
+    dispo:p.marketplaceStatut!=="out_of_stock"&&p.marketplaceStatut!=="rupture"&&p.marketplaceStatut!=="indisponible",
+    stock:p.marketplaceStock!=null?Number(p.marketplaceStock):0, img:p.photo||(p.photos&&p.photos[0])||"",
+    promo:!!promoObj, promoLabel:promoLabel, fromSB:true,
+    statut:p.marketplaceStatut||"disponible"
+  };
+}
 function applyProds(data,source){
   PRODS=data; sbSynced=true;
   var now=new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
@@ -3748,13 +3777,39 @@ function syncFromSupabase(){
           updateSBConnBox("sb",true,data.length+" articles via Supabase");
           subscribeRealtime();
         })
-        .catch(function(sbErr){
-          // ❌ Base de secours → afficher état préparation (PAS de catalogue local)
-          PRODS=[];
-          updateSBConnBox("sb",false,sbErr.message||String(sbErr));
-          setERPBar("offline","Catalogue Vita Fresh — temporairement indisponible","Reconnectez-vous bientôt");
-          setSyncBadge("offline","Hors ligne");
-          renderProds(); renderHeroCards(); updateCatCounts();
+        .catch(function(){
+          // fl_articles_public peut ne pas encore exister (sql/SECURE-fl_articles-
+          // public-view.sql pas encore exécuté côté Supabase) → repli temporaire sur
+          // la table brute (encore lisible par anon tant que ce script n'est pas
+          // passé). Garantit qu'un visiteur ne voit jamais un catalogue vide juste
+          // parce que l'API ERP a eu un blip réseau.
+          sb.from("fl_articles").select("id,payload,updated_at")
+            .then(function(r2){
+              if(r2.error) throw r2.error;
+              var data2=(r2.data||[]).filter(function(row){
+                return !String(row.id).startsWith("__") && row.payload && row.payload.marketplaceActif===true;
+              });
+              if(!data2.length){
+                PRODS=[];
+                updateSBConnBox("sb",true,"0 articles — catalogue en préparation");
+                setERPBar("online","Catalogue Vita Fresh — préparation en cours","Le catalogue sera disponible bientôt");
+                setSyncBadge("online","En ligne");
+                renderProds(); renderHeroCards(); updateCatCounts();
+                return;
+              }
+              data2.sort(function(a,b){ return (a.payload.marketplaceOrdre||999)-(b.payload.marketplaceOrdre||999); });
+              applyProds(data2.map(mapSBArticleFallback),"en direct (repli)");
+              updateSBConnBox("sb",true,data2.length+" articles via Supabase (repli)");
+              subscribeRealtime();
+            })
+            .catch(function(sbErr2){
+              // ❌ Base de secours → afficher état préparation (PAS de catalogue local)
+              PRODS=[];
+              updateSBConnBox("sb",false,sbErr2.message||String(sbErr2));
+              setERPBar("offline","Catalogue Vita Fresh — temporairement indisponible","Reconnectez-vous bientôt");
+              setSyncBadge("offline","Hors ligne");
+              renderProds(); renderHeroCards(); updateCatCounts();
+            });
         });
     });
 }
