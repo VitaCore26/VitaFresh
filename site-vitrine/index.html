@@ -138,8 +138,8 @@ html[dir="rtl"] .zone-card-badges{justify-content:flex-end}
 /* Grain premium subtil */
 .hero-grain{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.5;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E")}
 /* Stats glassmorphiques */
-.hero-stat-card{flex:1;min-width:90px;background:rgba(255,255,255,.05);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:16px 14px;transition:transform .3s,border-color .3s,background .3s}
-.hero-stat-card:hover{transform:translateY(-4px);border-color:rgba(184,150,12,.4);background:rgba(255,255,255,.08)}
+.hero-stat-card{flex:1;min-width:90px;background:rgba(8,18,10,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.16);border-radius:16px;padding:16px 14px;box-shadow:0 8px 24px rgba(0,0,0,.25);transition:transform .3s,border-color .3s,background .3s}
+.hero-stat-card:hover{transform:translateY(-4px);border-color:rgba(184,150,12,.5);background:rgba(8,18,10,.68)}
 .hero-stat-val{font-size:28px;font-weight:800;background:linear-gradient(135deg,var(--o2),#FFE066);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;letter-spacing:-.5px}
 .hero-stat-lbl{font-size:11.5px;color:rgba(255,255,255,.55);margin-top:6px;font-weight:500}
 .hero-stat-cat{font-size:9.5px;color:rgba(255,255,255,.42);margin-top:4px;line-height:1.4}
@@ -1419,6 +1419,12 @@ window.pickLang=pickLang; window.maybeShowLangPicker=maybeShowLangPicker;
         <!-- Rendered by renderStatsCfg() -->
       </div>
       <button onclick="addStatRow()" style="margin-top:14px;padding:9px 16px;border-radius:8px;background:var(--g1);color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:700">➕ Ajouter un chiffre</button>
+      <div class="cfg-grp" style="margin-top:18px">🏠 Chiffres de la bannière d'accueil</div>
+      <div style="font-size:12px;color:var(--gy);margin-bottom:10px;line-height:1.7">Par défaut, ces 2 chiffres viennent en direct de l'ERP (total articles / total clients). Laissez vide pour garder l'auto, ou forcez une valeur manuelle.</div>
+      <div class="cfg-row2">
+        <div class="cfg-f"><label>🥦 Produits frais (vide = auto ERP)</label><input id="c-hero-prods" type="text" placeholder="ex: 50+"></div>
+        <div class="cfg-f"><label>👥 Clients actifs (vide = auto ERP)</label><input id="c-hero-clients" type="text" placeholder="ex: 500+"></div>
+      </div>
     </div>
     <div class="cfg-sec" id="s-livraison">
       <div class="cfg-grp">⚡ Livraison Express</div>
@@ -3293,6 +3299,9 @@ try{
   if(CFG.sbUrl && CFG.sbUrl.indexOf("jwdrwapuetqoqnankgma")>=0){ CFG.sbUrl="https://wnuilvamhygkzupvfnxz.supabase.co"; CFG.sbKey=""; }
   localStorage.setItem("vf_cfg_v2", JSON.stringify(CFG));
 }catch(e){}
+// Affiche tout de suite un override admin éventuel (avant même la réponse ERP) ;
+// applyHeroStatOverrides() est une déclaration de fonction (hoisted), définie plus bas.
+try{ if(typeof applyHeroStatOverrides==="function") applyHeroStatOverrides(); }catch(e){}
 // كرجّع الإحصائيات المحفوظة من الإدارة
 try{ var savedStats=JSON.parse(localStorage.getItem("vf_stats_v1")||"null"); if(savedStats&&savedStats.length) CONFIG.STATS=savedStats; }catch(e){}
 
@@ -3637,14 +3646,31 @@ function applyProds(data,source){
   updateERPConnBox(true,"Connecté — "+PRODS.length+" articles · "+source);
 }
 // ── Statistiques live (clients actifs + catégories) depuis l'ERP ──
+var lastStatsData=null;
+// Réapplique les chiffres hero (ERP en direct, sauf override admin défini) —
+// appelé après chaque fetch /api/ext/stats ET juste après "Enregistrer" dans
+// le panneau admin, pour un retour visuel immédiat sans recharger la page.
+function applyHeroStatOverrides(){
+  var d=lastStatsData;
+  var elN=document.getElementById("stat-clients");
+  if(elN){
+    if(CFG.heroClientsOverride) elN.textContent=CFG.heroClientsOverride;
+    else if(d&&d.clientsActifs>0) elN.textContent=d.clientsActifs+(d.clientsActifs>=10?"+":"");
+  }
+  var elP=document.getElementById("stat-prods");
+  if(elP){
+    if(CFG.heroProdsOverride) elP.textContent=CFG.heroProdsOverride;
+    else if(d&&d.articlesActifs>0) elP.textContent=d.articlesActifs+(d.articlesActifs>=10?"+":"");
+  }
+}
+// ── Statistiques live (clients actifs + catégories) depuis l'ERP ──
 function loadStats(){
   fetch(CONFIG.API_URL+"/api/ext/stats",{cache:"no-cache"})
     .then(function(r){return r.ok?r.json():null;})
     .then(function(d){
       if(!d) return;
-      var elN=document.getElementById("stat-clients");
+      lastStatsData=d;
       var elC=document.getElementById("stat-clients-cat");
-      if(elN&&d.clientsActifs>0){ elN.textContent=d.clientsActifs+(d.clientsActifs>=10?"+":""); }
       if(elC&&d.categories){
         var parts=[];
         if(d.categories.chr>0)         parts.push("🏨 "+d.categories.chr+" CHR");
@@ -3652,9 +3678,7 @@ function loadStats(){
         if(d.categories.particulier>0) parts.push("🏠 "+d.categories.particulier+" Particuliers");
         elC.innerHTML=parts.join(" · ");
       }
-      // Compteur produits aussi
-      var elP=document.getElementById("stat-prods");
-      if(elP&&d.articlesActifs>0){ elP.textContent=d.articlesActifs+(d.articlesActifs>=10?"+":""); }
+      applyHeroStatOverrides();
     })
     .catch(function(){});
 }
@@ -4298,6 +4322,7 @@ function loadCfgFields(){
   if(maintCb){ maintCb.checked = CFG.maintenance===true; syncMaintenanceUI(); }
   syncGalleryAdminUI();
   var ds=document.getElementById("c-expdelay"); if(ds) ds.value=CFG.expDelay||"2h";
+  set("c-hero-prods", CFG.heroProdsOverride); set("c-hero-clients", CFG.heroClientsOverride);
   renderStatsCfg();
   if(sbSynced){
     updateSBConnBox("api",true,"Catalogue chargé — "+PRODS.length+" articles");
@@ -4328,6 +4353,9 @@ function saveConfig(){
   var apiUrl=get("c-api-url"); if(apiUrl){ CFG.apiUrl=apiUrl; CONFIG.API_URL=apiUrl; }
   CFG.maintenanceMsg=get("c-maintenance-msg")||CFG.maintenanceMsg;
   var maintCb=document.getElementById("c-maintenance"); CFG.maintenance = maintCb ? maintCb.checked : false;
+  // Chiffres bannière d'accueil : vide = retombe sur l'auto ERP (loadStats)
+  CFG.heroProdsOverride=get("c-hero-prods"); CFG.heroClientsOverride=get("c-hero-clients");
+  applyHeroStatOverrides();
   // Save stats separately in localStorage so they survive refresh
   try{ localStorage.setItem("vf_stats_v1", JSON.stringify(CONFIG.STATS)); } catch(_){}
   localStorage.setItem("vf_cfg_v2",JSON.stringify(CFG)); updateContactLinks(); renderStats(); applyMaintenanceMode();
@@ -4350,7 +4378,8 @@ function saveGlobalConfig(){
   var body = {
     contact: { wa:CFG.wa, email:CFG.email, addr:CFG.addr, appUrl:CFG.appUrl||CONFIG.APP_URL, fb:CFG.fb, ig:CFG.ig },
     socials: socials,
-    maintenance: { active:CFG.maintenance===true, msg:CFG.maintenanceMsg||"" }
+    maintenance: { active:CFG.maintenance===true, msg:CFG.maintenanceMsg||"" },
+    heroStats: { prodsOverride:CFG.heroProdsOverride||"", clientsOverride:CFG.heroClientsOverride||"" }
   };
   renderSocials(socials);
   return fetch(CONFIG.API_URL+"/api/ext/site-config",{
@@ -4456,6 +4485,11 @@ function loadGlobalConfig(){
       }
       // Réseaux sociaux GLOBAUX
       if(d.socials){ CFG.socials=d.socials; renderSocials(d.socials); }
+      // Chiffres bannière d'accueil GLOBAUX (override admin, visible par tous)
+      if(d.heroStats){
+        CFG.heroProdsOverride=d.heroStats.prodsOverride||""; CFG.heroClientsOverride=d.heroStats.clientsOverride||"";
+        applyHeroStatOverrides();
+      }
       updateContactLinks(); applyMaintenanceMode();
     }).catch(function(){});
 }
