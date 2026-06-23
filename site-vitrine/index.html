@@ -4249,6 +4249,10 @@ function submitOrder(){
   function onSuccess(num){
     // 1. Restaurer le bouton EN PREMIER (avant updateCartUI) pour que total-btn soit dans le DOM
     btn.disabled=false; btn.innerHTML="🔍 Vérifier ma commande — <span id='total-btn'>0 MAD</span>";
+    // 1b. Le bouton du modal de confirmation (autre id) doit aussi être réarmé —
+    // sinon il reste figé sur "Envoi en cours..." s'il est réouvert plus tard.
+    var ocBtn2=document.getElementById("oc-confirm-btn");
+    if(ocBtn2){ ocBtn2.disabled=false; ocBtn2.textContent="✅ Confirmer et envoyer"; }
     // 2. Vider le panier et rafraîchir l'UI
     cart={};
     updateCartUI();
@@ -5258,6 +5262,12 @@ function openOrderCheck(){
   var adr=document.getElementById("f-adr").value.trim();
   if(!nom||!tel){showToast("⚠️ Remplissez au minimum nom et téléphone");return;}
   if(!Object.keys(cart).length){showToast("🛒 Panier vide — ajoutez des produits");return;}
+  // 🔧 Toujours réarmer le bouton de confirmation à l'ouverture : si une
+  // tentative précédente avait laissé "⏳ Envoi en cours..." figé (le bouton
+  // n'est jamais remis à jour par submitOrder, qui agit sur un autre bouton),
+  // l'utilisateur resterait bloqué même après avoir corrigé l'erreur.
+  var ocBtn=document.getElementById("oc-confirm-btn");
+  if(ocBtn){ ocBtn.disabled=false; ocBtn.textContent="✅ Confirmer et envoyer"; }
   var items=Object.values(cart);
   var sub=items.reduce(function(s,p){return s+p.p*p.qty;},0);
   var df=delMode==="exp"?CFG.exp:(sub>=CFG.free?0:CFG.std);
