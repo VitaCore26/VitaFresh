@@ -3628,34 +3628,6 @@ function mapERPArticle(row){
   var packInfo=row.conditionnement||row.pack_info||row.packInfo||null;
   return{id:row.id,em:getEmoji(row.nom,cat),n:row.nom||"",no:nomAr,o:origin,p:prix,prixBase:prixBase,u:row.unite||"kg",packInfo:packInfo,cat:cat,tags:tags,t:firstTag,dispo:dispo,stock:stock,img:row.photo||"",promo:!!promoObj,promoLabel:promoLabel,fromERP:true};
 }
-// Map Supabase fl_articles row (payload JSONB) to internal PROD object
-function mapSBArticle(row){
-  var p=row.payload||{};
-  // Price: marketplacePrixPublic is the correct display price
-  // Fallback: calculate from pvMethode + pvValeur + prixAchat
-  var prixBase=parseFloat(p.marketplacePrixPublic||0);
-  if(!prixBase && p.prixAchat){
-    var pa=parseFloat(p.prixAchat||0), pv=parseFloat(p.pvValeur||0);
-    if(p.pvMethode==="pourcentage") prixBase=Math.round(pa*(1+pv/100)*100)/100;
-    else if(p.pvMethode==="montant") prixBase=Math.round((pa+pv)*100)/100;
-    else prixBase=pv||pa; // manuel: pvValeur IS the price
-  }
-  if(!prixBase) prixBase=parseFloat(p.pvValeur||0)||0;
-  var promoObj=p.marketplacePromo&&p.marketplacePromo.actif?p.marketplacePromo:null;
-  var prix=promoObj&&promoObj.prixPromo?parseFloat(promoObj.prixPromo):prixBase;
-  var promoLabel=promoObj?(promoObj.etiquette||(prixBase&&promoObj.prixPromo?"-"+Math.round((1-promoObj.prixPromo/prixBase)*100)+"%":"Promo")):"";
-  var cat=mapFamille(p.famille, p.nom), tags=Array.isArray(p.marketplaceTags)?p.marketplaceTags:(Array.isArray(p.tags)?p.tags:[]), firstTag=tags[0]||"frais";
-  return{
-    id:row.id, em:getEmoji(p.nom,cat), n:p.nom||"", no:p.nomAr||"",
-    o:p.marketplaceDescription||p.marketplaceCommentaire||p.famille||"Maroc",
-    p:prix, prixBase:prixBase,
-    u:p.unite||"kg", packInfo:p.conditionnement||p.pack_info||p.packInfo||null, cat:cat, tags:tags, t:firstTag,
-    dispo:p.marketplaceStatut!=="out_of_stock"&&p.marketplaceStatut!=="rupture"&&p.marketplaceStatut!=="indisponible",
-    stock:p.stockDisponible||0, img:p.photo||(p.photos&&p.photos[0])||"",
-    promo:!!promoObj, promoLabel:promoLabel, fromSB:true,
-    statut:p.marketplaceStatut||"disponible"
-  };
-}
 function applyProds(data,source){
   PRODS=data; sbSynced=true;
   var now=new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
@@ -3728,16 +3700,16 @@ function syncFromSupabase(){
         renderProds(); renderHeroCards(); updateCatCounts();
         return;
       }
-      sb.from("fl_articles")
-        .select("id,payload,updated_at")
+      // ⚠️ Sécurité : on ne lit JAMAIS fl_articles (table brute = prixAchat,
+      // stock réel ERP...) directement avec la clé anon. fl_articles_public
+      // est une vue qui ne renvoie que les champs catalogue, déjà filtrée
+      // sur les articles publiés (marketplaceActif=true). Voir sql/SECURE-
+      // fl_articles-public-view.sql.
+      sb.from("fl_articles_public")
+        .select("id,nom,nom_ar,unite,photo,famille,description,prix_public,stock_disponible,statut,tags,ordre,updated_at")
         .then(function(r){
           if(r.error) throw r.error;
-          // Filtrer : exclure entrées __config + n'afficher QUE les articles explicitement
-          // publiés sur le web (marketplaceActif === true). Même règle que l'API /api/ext/catalogue,
-          // pour que le site affiche EXACTEMENT le même nombre que l'application (0 si rien n'est publié).
-          var data=(r.data||[]).filter(function(row){
-            return !String(row.id).startsWith("__") && row.payload && row.payload.marketplaceActif===true;
-          });
+          var data=r.data||[];
           if(!data.length){
             // ✅ Supabase joint, mais 0 articles → état préparation (PAS de fallback local)
             PRODS=[];
@@ -3747,8 +3719,8 @@ function syncFromSupabase(){
             renderProds(); renderHeroCards(); updateCatCounts();
             return;
           }
-          data.sort(function(a,b){ return (a.payload.marketplaceOrdre||999)-(b.payload.marketplaceOrdre||999); });
-          applyProds(data.map(mapSBArticle),"en direct");
+          data.sort(function(a,b){ return (a.ordre||999)-(b.ordre||999); });
+          applyProds(data.map(mapERPArticle),"en direct");
           updateSBConnBox("sb",true,data.length+" articles via Supabase");
           subscribeRealtime();
         })
