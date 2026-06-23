@@ -6071,8 +6071,7 @@ document.addEventListener("DOMContentLoaded",function(){
   }
 });
 
-// ── ADMIN PIN ──
-var ADMIN_PIN = "VitaFresh2026";
+// ── ADMIN PIN ── (mot de passe validé CÔTÉ SERVEUR — plus aucun secret ici)
 var cfgClickCount=0,cfgTimer;
 function footerSecretClick(){
   cfgClickCount++;
@@ -6085,18 +6084,30 @@ function footerSecretClick(){
   }
 }
 function checkAdminPin(){
-  var val=document.getElementById('admin-pin-input').value;
+  var input=document.getElementById('admin-pin-input');
   var err=document.getElementById('admin-pwd-err');
-  if(val===ADMIN_PIN){
-    document.getElementById('admin-pwd-modal').style.display='none';
-    document.getElementById('admin-pin-input').value='';
-    if(err) err.style.display='none';
-    openCfg();
-  } else {
+  var val=input?input.value:'';
+  function fail(){
     if(err){ err.style.display='block'; setTimeout(function(){err.style.display='none';},2500); }
-    document.getElementById('admin-pin-input').value='';
-    document.getElementById('admin-pin-input').focus();
+    if(input){ input.value=''; input.focus(); }
   }
+  if(!val){ fail(); return; }
+  // Validation CÔTÉ SERVEUR : le mot de passe attendu vit dans l'env serveur
+  // (SHOP_ADMIN_PASSWORD), jamais dans ce HTML. Chemin relatif → rewrite vers l'ERP.
+  fetch('/api/ext/shop-admin-auth',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:val})
+  })
+  .then(function(r){ return r.json().catch(function(){ return {ok:false}; }); })
+  .then(function(res){
+    if(res && res.ok){
+      document.getElementById('admin-pwd-modal').style.display='none';
+      if(input) input.value='';
+      if(err) err.style.display='none';
+      openCfg();
+    } else { fail(); }
+  })
+  .catch(function(){ fail(); });
 }
 
 // ── LEGAL MODAL ──
