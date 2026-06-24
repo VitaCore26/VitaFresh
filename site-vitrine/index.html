@@ -91,16 +91,16 @@ html[dir="rtl"] .zone-card-badges{justify-content:flex-end}
 .container{max-width:1200px;margin:0 auto;padding:0 20px}
 /* NAVBAR */
 .navbar{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(6,12,7,.97);backdrop-filter:blur(20px) saturate(1.8);-webkit-backdrop-filter:blur(20px) saturate(1.8);border-bottom:1px solid rgba(78,222,128,.10);height:76px;display:flex;align-items:center;transition:box-shadow .3s}.navbar.scrolled{box-shadow:0 4px 32px rgba(0,0,0,.45)}
-.nav-inner{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:1200px;margin:0 auto;padding:0 20px;gap:12px}
-.nav-brand{display:flex;align-items:center;gap:12px;text-decoration:none;flex-shrink:0}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:1280px;margin:0 auto;padding:0 16px;gap:10px}
+.nav-brand{display:flex;align-items:center;gap:9px;text-decoration:none;flex-shrink:0;margin-left:-2px}
 .nav-logo{height:52px;width:52px;flex-shrink:0}
 .nav-logo-fallback{height:44px;width:44px;border-radius:10px;background:linear-gradient(135deg,var(--g1),var(--g2));display:none;align-items:center;justify-content:center;font-size:20px}
 .nav-brand-text{line-height:1.1}
 .nav-brand-name{font-size:19px;font-weight:900;color:#ffffff;display:block;letter-spacing:1.5px;text-transform:uppercase}
 .nav-brand-by{font-size:9.5px;color:#4ade80;letter-spacing:.8px;display:block;margin-top:1px;font-weight:700;text-transform:uppercase}
 .nav-brand-sub{font-size:10.5px;color:rgba(255,255,255,.65);letter-spacing:.6px;display:block;margin-top:2px;font-weight:400}
-.nav-links{display:flex;align-items:center;gap:2px;list-style:none}
-.nav-links a{padding:7px 11px;border-radius:8px;font-size:13px;font-weight:500;color:rgba(255,255,255,.65);text-decoration:none;transition:all .2s;white-space:nowrap}
+.nav-links{display:flex;align-items:center;gap:1px;list-style:none;min-width:0;flex-shrink:1}
+.nav-links a{padding:7px 9px;border-radius:8px;font-size:12.5px;font-weight:500;color:rgba(255,255,255,.65);text-decoration:none;transition:all .2s;white-space:nowrap}
 .nav-links a:hover{background:rgba(255,255,255,.08);color:#4ade80}
 .nav-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .lang-switcher{display:flex;align-items:center;gap:2px;background:rgba(255,255,255,.06);border-radius:8px;padding:3px}
@@ -159,6 +159,8 @@ html[dir="rtl"] .zone-card-badges{justify-content:flex-end}
 .btn-hero-whatsapp:hover{background:#1DAA52;transform:translateY(-2px)}
 .btn-hero-app{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.25);color:#fff;padding:14px 26px;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none;transition:all .2s;display:inline-flex;align-items:center;gap:8px}
 .btn-hero-app:hover{background:rgba(255,255,255,.18)}
+.btn-hero-account{background:rgba(74,222,128,.12);border:1.5px solid rgba(74,222,128,.4);color:#4ade80;padding:14px 26px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;transition:all .2s;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.btn-hero-account:hover{background:rgba(74,222,128,.22);border-color:rgba(74,222,128,.6)}
 .hero-cards{display:grid;grid-template-columns:1fr 1fr;gap:13px;width:340px;z-index:2;animation:scaleIn .8s .4s cubic-bezier(.22,1,.36,1) both}
 .hcard{background:rgba(255,255,255,.07);border:1px solid rgba(184,150,12,.2);border-radius:13px;overflow:hidden;transition:.3s;cursor:pointer;animation:floatY 4s ease-in-out infinite}
 .hcard:nth-child(2){animation-delay:.6s}
@@ -660,6 +662,10 @@ html[dir="rtl"] .modal-close{right:auto;left:14px}
 .recipe-nav-btn:hover,.recipe-nav-btn.on{background:var(--o1);color:var(--gd)}
 
 /* RESPONSIVE */
+/* Desktop intermédiaire (laptops) : on compacte la nav pour garantir que le
+   bouton « Mon Espace » reste toujours visible (ne déborde jamais à droite). */
+@media(max-width:1300px){.nav-brand-sub{display:none}.nav-links a{padding:6px 7px;font-size:12px}.lang-btn{padding:5px 6px;font-size:10.5px}.btn-app-link{padding:7px 10px}}
+@media(max-width:1100px){.nav-brand-by{display:none}.nav-links a{padding:5px 6px;font-size:11.5px}}
 @media(max-width:1024px){.hero-cards{display:none!important}.hero-inner{grid-template-columns:1fr!important}.pgrid{grid-template-columns:repeat(3,1fr)}.cats{grid-template-columns:repeat(3,1fr)}.erp-g{grid-template-columns:1fr;gap:32px}.footer-cols{grid-template-columns:1fr 1fr;gap:24px}.cfg-drawer{width:100%;right:-100%}.wa-section-grid{grid-template-columns:1fr}}
 @media(max-width:768px){.nav-links{display:none}.hamburger{display:flex}.hero-inner{grid-template-columns:1fr}.hero{padding:52px 16px}.hero h1{font-size:32px}.pro-grid{grid-template-columns:1fr}.ogrid{grid-template-columns:1fr}.tg{grid-template-columns:1fr}.footer-cols{grid-template-columns:1fr}.frow{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}.zone-grid{grid-template-columns:1fr}.delivery-modes{grid-template-columns:1fr}.pgrid{grid-template-columns:repeat(2,1fr)}.popts{grid-template-columns:repeat(2,1fr)}.dopts{grid-template-columns:1fr}.container{padding:0 16px}.lang-switcher,.btn-app-link{display:none}.nav-brand-by,.nav-brand-sub{display:none}.nav-logo{height:40px;width:40px}.nav-brand-name{font-size:16px}.nav-inner{padding:0 12px;gap:8px}.nav-right{gap:6px}.btn-login{padding:7px 10px;font-size:12px}.btn-cart{padding:7px 9px;font-size:11px}}
 @media(max-width:480px){.pgrid{grid-template-columns:1fr}.hero-ctas{flex-direction:column}.btn-hero-primary,.btn-hero-whatsapp,.btn-hero-app{justify-content:center}.cat-wa-banner{flex-direction:column;text-align:center}.btn-wa-green{margin:0 auto}.erp-bar{padding:7px 14px}.strip{padding:12px}.hero-stat-val{font-size:20px}.hero-stat-card{padding:12px 8px;min-width:0}.hero-stats{gap:8px}.storage-card{padding:16px}.storage-meta{gap:8px}.storage-meta-val{font-size:14px}.storage-meta-item{padding:8px 4px}.storage-meta-lbl{font-size:10px}}
@@ -1084,7 +1090,7 @@ const TEXTS = {
     cat_all:"Tous", cat_fresh:"🌿 Frais", cat_peeled:"🔪 Épluché", cat_washed:"💧 Lavé", cat_cut:"🔪 Coupé", cat_promo:"🔥 Promo",
     avis_tab_all:"Tous", avis_tab_client:"Clients", avis_tab_fourn:"Fournisseurs",
     search_ph:"Rechercher un produit...",
-    sort_def:"Tri par défaut", sort_asc:"Prix ↑ croissant", sort_desc:"Prix ↓ décroissant", sort_az:"Nom A→Z", sort_dispo:"Disponibilité",
+    sort_def:"A→Z (par défaut)", sort_asc:"Prix ↑ croissant", sort_desc:"Prix ↓ décroissant", sort_az:"Nom A→Z", sort_dispo:"Disponibilité",
     prep_banner:"🔪💧 <strong>Produits lavés et/ou épluchés disponibles sur demande</strong> — sélectionnez la préparation dans votre commande. <em>Confirmation sous 1h par l'équipe Vita Fresh.</em>",
     ord_tag:"Passez votre commande", ord_title:"Commander en ligne", ord_sub:"Standard ou express, avec ou sans préparation. Enregistré dans FreshLink ERP.",
     ord_info_title:"📋 Vos informations",
@@ -1191,7 +1197,7 @@ const TEXTS = {
     cat_all:"الكل", cat_fresh:"🌿 طازة", cat_peeled:"🔪 مقشّر", cat_washed:"💧 مغسول", cat_cut:"🔪 مقطّع", cat_promo:"🔥 عروض",
     avis_tab_all:"الكل", avis_tab_client:"الزبائن", avis_tab_fourn:"المورّدين",
     search_ph:"قلّب على منتج...",
-    sort_def:"ترتيب افتراضي", sort_asc:"الثمن ↑ من الأرخص", sort_desc:"الثمن ↓ من الأغلى", sort_az:"الاسم أ→ي", sort_dispo:"التوفر",
+    sort_def:"أ→ي (افتراضي)", sort_asc:"الثمن ↑ من الأرخص", sort_desc:"الثمن ↓ من الأغلى", sort_az:"الاسم أ→ي", sort_dispo:"التوفر",
     prep_banner:"🔪💧 <strong>المنتجات المغسولة و/أو المقشرة متوفرة عند الطلب</strong> — اختار التحضير المطلوب فالطلبية ديالك. <em>التأكيد خلال ساعة من فريق Vita Fresh.</em>",
     ord_tag:"سيفط طلبيتك", ord_title:"طلب أونلاين", ord_sub:"عادي أو سريع، مع أو بلا تحضير. مسجّل فـ FreshLink ERP.",
     ord_info_title:"📋 معلوماتك",
@@ -1727,13 +1733,21 @@ GET  /api/ext/commandes/:id → suivi commande</div>
 
 /* ── HERO PHOTO CARDS ── */
 .hero-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:340px;z-index:2;animation:scaleIn .8s .4s cubic-bezier(.22,1,.36,1) both}
-.hcard{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:16px;overflow:hidden;cursor:pointer;transition:transform .3s,box-shadow .3s;backdrop-filter:blur(10px)}
+.hcard{position:relative;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:16px;overflow:hidden;cursor:pointer;transition:transform .3s,box-shadow .3s;backdrop-filter:blur(10px);animation:hcardFade .55s cubic-bezier(.22,1,.36,1) both}
 .hcard:hover{transform:translateY(-4px) scale(1.02);box-shadow:0 20px 40px rgba(0,0,0,.4)}
 .hcard-img{width:100%;height:110px;object-fit:cover;display:block}
 .hcard-img-ph{width:100%;height:110px;display:flex;align-items:center;justify-content:center;font-size:42px;background:rgba(255,255,255,.04)}
 .hcard-b{padding:10px 12px}
 .hcard-n{font-size:13px;font-weight:700;color:#fff;margin-bottom:3px}
 .hcard-p{font-size:12px;color:var(--o2);font-weight:600}
+.hcard-old{text-decoration:line-through;color:rgba(255,255,255,.5);font-weight:500;font-size:11px;margin-right:5px}
+@keyframes hcardFade{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+/* Badge promo / déstockage — coin haut gauche de la photo */
+.hcard-promo{border-color:rgba(239,68,68,.45)}
+.hcard-badge{position:absolute;top:8px;left:8px;z-index:3;display:inline-flex;align-items:center;gap:4px;padding:4px 9px 4px 7px;border-radius:9px;font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,#ef4444 0%,#f97316 100%);box-shadow:0 4px 14px rgba(239,68,68,.5),inset 0 1px 0 rgba(255,255,255,.3);border:1px solid rgba(255,255,255,.28);white-space:nowrap}
+.hcard-badge::before{content:"";position:absolute;inset:0;border-radius:9px;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);background-size:220% 100%;animation:badgeShine 2.8s ease-in-out infinite;pointer-events:none}
+.hcard-badge-i{font-size:11px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
+@keyframes badgeShine{0%{background-position:140% 0}55%,100%{background-position:-40% 0}}
 
 /* ── ANIMATED COUNTER ── */
 .counter-val{display:inline-block;animation:countUp .8s ease both}
@@ -1772,6 +1786,7 @@ GET  /api/ext/commandes/:id → suivi commande</div>
         <a href="#catalogue" class="btn-hero-primary">🥦 <span data-i18n="btn_catalogue">Voir le catalogue</span></a>
         <a href="#" class="btn-hero-whatsapp" onclick="orderWhatsApp(event)">📲 <span data-i18n="btn_wa_order">Commander</span></a>
         <a href="#" class="btn-hero-app" onclick="openGuide();return false;">📖 <span>Guide commande</span></a>
+        <a href="#" class="btn-hero-account" onclick="openLogin();return false;">👤 <span data-i18n="btn_login">Mon Espace</span></a>
       </div>
       <div class="hero-stats" style="display:flex;gap:14px;margin-top:40px;animation:fadeSlideUp .75s .55s cubic-bezier(.22,1,.36,1) both">
         <div class="hero-stat-card"><div class="hero-stat-val" id="stat-prods">50+</div><div class="hero-stat-lbl">🥦 Produits frais</div></div>
@@ -1992,10 +2007,9 @@ GET  /api/ext/commandes/:id → suivi commande</div>
         <input id="prod-search" type="text" data-i18n-ph="search_ph" placeholder="Rechercher un produit..." oninput="renderProds()" style="width:100%;padding:10px 12px 10px 36px;border:1.5px solid #dde;border-radius:24px;font-size:14px;font-family:inherit;outline:none;background:#fff;box-sizing:border-box"/>
       </div>
       <select id="prod-sort" onchange="renderProds()" style="padding:10px 14px;border:1.5px solid #dde;border-radius:24px;font-size:13px;font-family:inherit;background:#fff;cursor:pointer">
-        <option value="def" data-i18n="sort_def">Tri par défaut</option>
+        <option value="def" data-i18n="sort_def">A→Z (par défaut)</option>
         <option value="prix-asc" data-i18n="sort_asc">Prix ↑ croissant</option>
         <option value="prix-desc" data-i18n="sort_desc">Prix ↓ décroissant</option>
-        <option value="nom-asc" data-i18n="sort_az">Nom A→Z</option>
         <option value="dispo" data-i18n="sort_dispo">Disponibilité</option>
       </select>
       <div class="erp-sync-badge">
@@ -3750,7 +3764,7 @@ function syncFromSupabase(){
         renderProds(); renderHeroCards(); updateCatCounts();
         return;
       }
-      applyProds(data.map(mapERPArticle),"API ERP");
+      applyProds(data.map(mapERPArticle),"en ligne");
       updateSBConnBox("api",true,data.length+" articles via API ERP");
     })
     .catch(function(){
@@ -3786,7 +3800,7 @@ function syncFromSupabase(){
             return;
           }
           data.sort(function(a,b){ return (a.ordre||999)-(b.ordre||999); });
-          applyProds(data.map(mapERPArticle),"en direct");
+          applyProds(data.map(mapERPArticle),"en ligne");
           updateSBConnBox("sb",true,data.length+" articles via Supabase");
           subscribeRealtime();
         })
@@ -3811,7 +3825,7 @@ function syncFromSupabase(){
                 return;
               }
               data2.sort(function(a,b){ return (a.payload.marketplaceOrdre||999)-(b.payload.marketplaceOrdre||999); });
-              applyProds(data2.map(mapSBArticleFallback),"en direct (repli)");
+              applyProds(data2.map(mapSBArticleFallback),"en ligne");
               updateSBConnBox("sb",true,data2.length+" articles via Supabase (repli)");
               subscribeRealtime();
             })
@@ -3892,26 +3906,55 @@ function getProductPhoto(name){
   for(var k in PRODUCT_PHOTOS){ if(n.includes(k)) return PRODUCT_PHOTOS[k]; }
   return PRODUCT_PHOTOS.default;
 }
+// Détecte un article en promotion ou en déstockage
+function isPromoLike(p){
+  return !!p.promo || (p.tags && (p.tags.indexOf("destockage")>=0||p.tags.indexOf("déstockage")>=0||p.tags.indexOf("destock")>=0));
+}
+function isDestock(p){
+  return p.tags && (p.tags.indexOf("destockage")>=0||p.tags.indexOf("déstockage")>=0||p.tags.indexOf("destock")>=0);
+}
+function shuffleArr(arr){ arr=arr.slice(); for(var i=arr.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=arr[i];arr[i]=arr[j];arr[j]=t;} return arr; }
+var heroRotateTimer=null;
 function renderHeroCards(){
   var heroEl=document.getElementById("hero-cards");
   if(!heroEl) return;
   // Pas de fallback hardcoded — uniquement les vrais articles ERP
-  var avail=(PRODS||[]).filter(function(p){return p.dispo;}).slice(0,4);
+  var avail=(PRODS||[]).filter(function(p){return p.dispo;});
   if(!avail.length){
     // Aucun article ERP disponible → masquer la grille de cartes
     // (le compteur "Produits frais" est géré par loadStats = total ERP)
     heroEl.style.display="none";
+    if(heroRotateTimer){clearInterval(heroRotateTimer);heroRotateTimer=null;}
     return;
   }
   heroEl.style.display="";
-  heroEl.innerHTML=avail.map(function(p){
+  var MAX=6;
+  // Priorité aux promos/déstockage, puis le reste — tout mélangé pour que
+  // les cartes changent à chaque rendu (jamais figées sur les 4 mêmes articles)
+  var promos=shuffleArr(avail.filter(isPromoLike));
+  var rest=shuffleArr(avail.filter(function(p){return !isPromoLike(p);}));
+  var pick=promos.concat(rest).slice(0,MAX);
+  heroEl.innerHTML=pick.map(function(p){
     var photoUrl=p.img||getProductPhoto(p.n);
-    return '<div class="hcard" onclick="document.getElementById(\'catalogue\').scrollIntoView({behavior:\'smooth\'})">'
+    var badge="";
+    if(isPromoLike(p)){
+      var lbl=p.promoLabel || (isDestock(p)?"Déstockage":"Promo");
+      badge='<div class="hcard-badge"><span class="hcard-badge-i">🏷️</span>'+lbl+'</div>';
+    }
+    var priceHtml=(isPromoLike(p)&&p.prixBase&&p.prixBase>p.p)
+      ? '<span class="hcard-old">'+p.prixBase+'</span>'+p.p+' MAD/'+p.u
+      : p.p+' MAD/'+p.u;
+    return '<div class="hcard'+(isPromoLike(p)?' hcard-promo':'')+'" onclick="document.getElementById(\'catalogue\').scrollIntoView({behavior:\'smooth\'})">'
+      +badge
       +'<img class="hcard-img" src="'+photoUrl+'" alt="'+p.n+'" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
       +'<div class="hcard-img-ph" style="display:none">'+p.em+'</div>'
-      +'<div class="hcard-b"><div class="hcard-n">'+p.em+' '+p.n+'</div><div class="hcard-p">'+p.p+' MAD/'+p.u+'</div></div>'
+      +'<div class="hcard-b"><div class="hcard-n">'+p.em+' '+p.n+'</div><div class="hcard-p">'+priceHtml+'</div></div>'
       +'</div>';
   }).join("");
+  // Rotation auto : si plus d'articles que de cartes, on renouvelle la sélection
+  // toutes les 6 s pour mettre en avant tout le catalogue à tour de rôle.
+  if(heroRotateTimer){clearInterval(heroRotateTimer);heroRotateTimer=null;}
+  if(avail.length>MAX){ heroRotateTimer=setInterval(renderHeroCards,6000); }
   // Le compteur "Produits frais" est géré par loadStats (total ERP), pas ici
 }
 
@@ -3976,8 +4019,9 @@ function renderProds(f){
   var sortEl=document.getElementById("prod-sort"), sort=sortEl?sortEl.value:"def";
   if(sort==="prix-asc") list.sort(function(a,b){return a.p-b.p;});
   else if(sort==="prix-desc") list.sort(function(a,b){return b.p-a.p;});
-  else if(sort==="nom-asc") list.sort(function(a,b){return (a.n||"").localeCompare(b.n||"","fr");});
   else if(sort==="dispo") list.sort(function(a,b){return (b.dispo?1:0)-(a.dispo?1:0);});
+  // Défaut ("def") = ordre alphabétique A→Z (comme "nom-asc")
+  else list.sort(function(a,b){return (a.n||"").localeCompare(b.n||"","fr");});
   if(!list.length){
     // Distinguer : catalogue totalement vide (préparation) vs filtre actif sans résultat
     var pgrid=document.getElementById("pgrid");
