@@ -876,7 +876,7 @@ html[dir="rtl"] .modal-close{right:auto;left:14px}
 </style>
 
 <!-- ═══ EmailJS SDK (envoi d'emails côté client, sans backend) ═══ -->
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
 
@@ -1748,6 +1748,13 @@ GET  /api/ext/commandes/:id → suivi commande</div>
 .hcard-badge::before{content:"";position:absolute;inset:0;border-radius:9px;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);background-size:220% 100%;animation:badgeShine 2.8s ease-in-out infinite;pointer-events:none}
 .hcard-badge-i{font-size:11px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
 @keyframes badgeShine{0%{background-position:140% 0}55%,100%{background-position:-40% 0}}
+/* ── Allègement (sans rien retirer visuellement) ──────────────────────────── */
+/* 1) Onglet caché → on met TOUTES les animations en pause (CPU/batterie). */
+body.anim-paused *,body.anim-paused *::before,body.anim-paused *::after{animation-play-state:paused!important}
+/* 2) Utilisateurs « reduced motion » → on calme les boucles infinies. */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
 
 /* ── ANIMATED COUNTER ── */
 .counter-val{display:inline-block;animation:countUp .8s ease both}
@@ -3954,7 +3961,7 @@ function renderHeroCards(){
   // Rotation auto : si plus d'articles que de cartes, on renouvelle la sélection
   // toutes les 6 s pour mettre en avant tout le catalogue à tour de rôle.
   if(heroRotateTimer){clearInterval(heroRotateTimer);heroRotateTimer=null;}
-  if(avail.length>MAX){ heroRotateTimer=setInterval(renderHeroCards,6000); }
+  if(avail.length>MAX){ heroRotateTimer=setInterval(function(){ if(!document.hidden) renderHeroCards(); },6000); }
   // Le compteur "Produits frais" est géré par loadStats (total ERP), pas ici
 }
 
@@ -7408,5 +7415,9 @@ window.activeCategory=activeCategory;
 })();
 </script>
 
+<script>
+/* Allègement : pause les animations quand l'onglet n'est pas visible (économise CPU/batterie, invisible pour le visiteur actif). */
+(function(){function s(){document.body.classList.toggle("anim-paused",document.hidden);}document.addEventListener("visibilitychange",s);s();})();
+</script>
 </body>
 </html>
