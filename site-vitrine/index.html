@@ -7419,5 +7419,104 @@ window.activeCategory=activeCategory;
 /* Allègement : pause les animations quand l'onglet n'est pas visible (économise CPU/batterie, invisible pour le visiteur actif). */
 (function(){function s(){document.body.classList.toggle("anim-paused",document.hidden);}document.addEventListener("visibilitychange",s);s();})();
 </script>
+
+<!-- ── Roue de la Fortune (HONNÊTE) — dormante tant qu'aucune loterie active côté ERP ── -->
+<style>
+#vf-lot{position:fixed;inset:0;z-index:99998;display:none;align-items:center;justify-content:center;background:rgba(3,8,5,.78);backdrop-filter:blur(6px);padding:18px}
+#vf-lot.on{display:flex}
+.vf-lot-card{width:100%;max-width:380px;background:linear-gradient(160deg,#0d2117,#081a0e);border:1px solid rgba(184,150,12,.35);border-radius:22px;padding:22px 20px;text-align:center;color:#fff;box-shadow:0 24px 70px rgba(0,0,0,.6)}
+.vf-lot-x{position:absolute;top:14px;right:16px;color:#fff;opacity:.6;font-size:24px;cursor:pointer;background:none;border:none}
+.vf-lot-t{font-family:'Playfair Display',serif;font-size:23px;font-weight:700;margin:2px 0 4px}
+.vf-lot-s{font-size:12.5px;color:rgba(255,255,255,.6);margin-bottom:16px}
+.vf-wheel-wrap{position:relative;width:250px;height:250px;margin:0 auto 16px}
+.vf-wheel{width:100%;height:100%;border-radius:50%;border:6px solid #b8960c;transition:transform 4.6s cubic-bezier(.17,.67,.18,1);position:relative;overflow:hidden}
+.vf-wheel .vf-seg{position:absolute;top:0;left:50%;width:50%;height:50%;transform-origin:0% 100%;font-size:11px;font-weight:800;color:#fff;display:flex;align-items:flex-start;justify-content:center;padding-top:18px;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.vf-wheel .vf-seg span{transform:rotate(90deg);white-space:nowrap;max-width:90px;overflow:hidden;text-overflow:ellipsis}
+.vf-ptr{position:absolute;top:-10px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-top:22px solid #fff;z-index:3;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
+.vf-lot-btn{width:100%;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,#b8960c,#d4a93a);color:#081a0e;font-weight:800;font-size:15px;cursor:pointer;font-family:'Inter',sans-serif}
+.vf-lot-btn:disabled{opacity:.55;cursor:default}
+.vf-lot-res{margin-top:14px;font-size:14px;line-height:1.6}
+.vf-lot-res b{color:#fcd34d}
+.vf-lot-terms{font-size:10.5px;color:rgba(255,255,255,.42);margin-top:8px;line-height:1.5}
+</style>
+<div id="vf-lot"><div class="vf-lot-card" style="position:relative">
+  <button class="vf-lot-x" onclick="document.getElementById('vf-lot').classList.remove('on')">×</button>
+  <div class="vf-lot-t" id="vf-lot-t"></div><div class="vf-lot-s" id="vf-lot-s"></div>
+  <div class="vf-wheel-wrap"><div class="vf-ptr"></div><div class="vf-wheel" id="vf-wheel"></div></div>
+  <button class="vf-lot-btn" id="vf-lot-spin"></button>
+  <div class="vf-lot-res" id="vf-lot-res"></div>
+  <div class="vf-lot-terms" id="vf-lot-terms"></div>
+</div></div>
+<script>
+(function(){
+  var L={
+    fr:{t:"Tournez la roue 🎡",s:"Débloquez votre réduction Vita Fresh",spin:"TOURNER",
+        res:function(m,se){return "Bravo ! <b>"+m+" DH de réduction</b> — valable dès <b>"+se+" DH</b> d'achat.";},
+        gift:function(l){return "Bravo ! Vous avez gagné : <b>"+l+"</b>.";},
+        terms:function(se){return "Réduction conditionnée à "+se+" DH d'achat. Non cumulable. Offre limitée.";},
+        none:"Aucune récompense disponible pour le moment."},
+    ar:{t:"دوّر الروى 🎡",s:"فك التخفيض ديالك مع Vita Fresh",spin:"دوّر",
+        res:function(m,se){return "مبروك! <b>"+m+" درهم تخفيض</b> — صالح من <b>"+se+" درهم</b> ديال الشرا.";},
+        gift:function(l){return "مبروك! ربحتي: <b>"+l+"</b>.";},
+        terms:function(se){return "التخفيض خاصو شرا ديال "+se+" درهم. ما كيتجمعش. عرض محدود.";},
+        none:"ما كاينش شي جائزة دابا."},
+    en:{t:"Spin the wheel 🎡",s:"Unlock your Vita Fresh discount",spin:"SPIN",
+        res:function(m,se){return "Nice! <b>"+m+" DH off</b> — valid from <b>"+se+" DH</b> spend.";},
+        gift:function(l){return "Nice! You won: <b>"+l+"</b>.";},
+        terms:function(se){return "Discount requires "+se+" DH spend. Not combinable. Limited offer.";},
+        none:"No reward available right now."}
+  };
+  function lang(){ return (window.currentLang==="ar"||window.currentLang==="en")?window.currentLang:"fr"; }
+  function uid(){ var k="vf_uid"; var v=localStorage.getItem(k); if(!v){v="web-"+Math.random().toString(36).slice(2,10);localStorage.setItem(k,v);} return v; }
+  function pick(rw){ var tot=rw.reduce(function(s,r){return s+(r.poids||1);},0),x=Math.random()*tot; for(var i=0;i<rw.length;i++){ if((x-=(rw[i].poids||1))<=0) return i; } return 0; }
+
+  var shown=false, seuil=5000;
+  function show(data){
+    if(shown) return; shown=true;
+    var lg=L[lang()], rewards=(data.rewards||[]).slice(0,6); seuil=data.seuilCible||5000;
+    if(!rewards.length) return;
+    document.getElementById("vf-lot-t").textContent=lg.t;
+    document.getElementById("vf-lot-s").textContent=lg.s;
+    var spin=document.getElementById("vf-lot-spin"); spin.textContent=lg.spin;
+    var wheel=document.getElementById("vf-wheel"), n=rewards.length, seg=360/n;
+    var cols=["#1a4f2a","#b8960c","#2d7a46","#8a6d08","#256b3a","#a07d0a"];
+    var stops=rewards.map(function(r,i){return cols[i%cols.length]+" "+(i*seg)+"deg "+((i+1)*seg)+"deg";}).join(",");
+    wheel.style.background="conic-gradient("+stops+")";
+    wheel.innerHTML=rewards.map(function(r,i){
+      var lbl=r.type==="reduction"?(r.montant+" DH"):(r.label||"🎁");
+      return '<div class="vf-seg" style="transform:rotate('+(i*seg+seg/2)+'deg)"><span>'+lbl+'</span></div>';
+    }).join("");
+    document.getElementById("vf-lot").classList.add("on");
+
+    spin.onclick=function(){
+      spin.disabled=true;
+      var i=pick(rewards), r=rewards[i];
+      var target=360*5-(i*seg+seg/2)+(Math.random()*seg*0.5-seg*0.25);
+      wheel.style.transform="rotate("+target+"deg)";
+      setTimeout(function(){
+        fetch("/api/ext/loterie",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({action:"claim",segmentId:r.id,userId:uid()})})
+          .then(function(x){return x.json();}).then(function(j){
+            var res=document.getElementById("vf-lot-res");
+            if(j&&j.ok){
+              res.innerHTML = r.type==="reduction" ? lg.res(r.montant,seuil) : lg.gift(r.label||"🎁");
+              if(j.coupon&&j.coupon.code) res.innerHTML += '<br>Code : <b>'+j.coupon.code+'</b>';
+              document.getElementById("vf-lot-terms").textContent = lg.terms(seuil);
+              try{localStorage.setItem("vf_loterie_claimed","1");localStorage.setItem("vf_coupon",JSON.stringify(j.coupon||{}));}catch(e){}
+            } else { res.textContent = (lg.none); }
+          }).catch(function(){ document.getElementById("vf-lot-res").textContent=lg.none; });
+      },4700);
+    };
+  }
+  function init(){
+    if(localStorage.getItem("vf_loterie_claimed")) return;       // déjà joué
+    fetch("/api/ext/loterie").then(function(r){return r.json();}).then(function(d){
+      if(d&&d.active&&d.rewards&&d.rewards.length) setTimeout(function(){show(d);},900);  // juste après le choix de langue
+    }).catch(function(){});
+  }
+  if(document.readyState==="complete"||document.readyState==="interactive") setTimeout(init,1200);
+  else window.addEventListener("DOMContentLoaded",function(){setTimeout(init,1200);});
+})();
+</script>
 </body>
 </html>
